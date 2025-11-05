@@ -11,73 +11,116 @@
 \chapter{Introduction}
 \label{chap:intro}
 
-\fancypar{T}{{\sc he}} remarkable success of foundation models in computer vision (CLIP, MAE) and natural language processing (GPT, BERT) has demonstrated the transformative power of learning universal representations that generalize across tasks with minimal fine-tuning. These models leverage massive unlabeled datasets through self-supervised learning to discover rich, transferable features that encode fundamental properties of their respective domains. Yet, wireless communication systems—despite generating enormous volumes of signal data—remain largely dependent on narrow, task-specific models trained from scratch for each new scenario. This dissertation asks a fundamental question: \textit{Can we develop foundation models for wireless signals that capture universal physical layer properties and enable zero-shot or few-shot generalization to new modulation schemes and channel conditions?}
+\fancypar{T}{{\sc he}} rapid evolution of wireless communications, driven by technologies such as the upcoming 6G standard\cite{fontaine2024towards}, necessitates a transformation in how Artificial Intelligence (AI) addresses challenges unattainable by traditional optimization techniques. The remarkable success of foundation models in computer vision (CLIP\cite{radford2021learning}, MAE\cite{he2022masked}) and natural language processing (GPT\cite{10500411}, BERT\cite{devlin2019bert}) has demonstrated the transformative power of learning universal representations that generalize across tasks with minimal fine-tuning. These models leverage massive unlabeled datasets through self-supervised learning to discover rich, transferable features that encode fundamental properties of their respective domains. Yet, the current AI landscape in wireless networks remains dominated by models developed and trained for isolated, task-specific applications\cite{fontaine2024towards}, leading to significant limitations in knowledge sharing, reuse, and adaptability. This dissertation addresses a fundamental question: \textit{Can we develop practical pathways toward Wireless Physical-Layer Foundation Models (WPFMs) by strategically approximating and integrating world knowledge through modular, cost-effective architectures?}
 
-The challenge of building wireless foundation models is multi-faceted. Unlike images or text, wireless signals exhibit unique characteristics: they are inherently noisy, their structure depends on both transmitter design and channel physics, and their semantic meaning (modulation type, information content) is encoded in subtle statistical patterns rather than explicit visual or linguistic features. Moreover, the space of possible signals is vast and continuously evolving with new communication standards. These properties demand a rethinking of how we approach representation learning, adaptation, and inference in wireless systems.
+The limitations of current wireless AI systems are particularly evident in Automatic Modulation Classification (AMC)—a critical component of spectrum management, signal identification, and cognitive radio systems\cite{gao2023moe}. Conventional deep learning approaches face three major challenges: (1) \textbf{Imbalance across conditions:} Models often fail to distinguish between low and high Signal-to-Noise Ratio (SNR) conditions\cite{gao2023moe}, resulting in uneven classification performance where low SNR signals obscured by noise require specialized handling compared to high SNR signals; (2) \textbf{Data scarcity and training overhead:} Acquiring high-quality labeled radio frequency (RF) signal data demands specialized expertise and equipment, while traditional deep learning necessitates large labeled datasets\cite{kong2023transformer}, creating barriers to scalability; (3) \textbf{Lack of interpretability and generalization:} Task-specific models struggle to adapt quickly to new tasks, generalize across diverse channel characteristics, and lack capacity for human-understandable interaction\cite{gao2023moe}.
 
-This thesis establishes a systematic pathway toward wireless foundation models by integrating three traditionally separate paradigms: (1) self-supervised representation learning to extract universal wireless features from unlabeled data, (2) meta-learning to enable rapid adaptation to new signal types with minimal supervision, and (3) language model integration to achieve open-set recognition capabilities beyond traditional closed-set classification. Our central innovation is demonstrating that multimodal masked autoencoders can learn encodings that function as semantic features, bridging the wireless signal domain with the reasoning capabilities of large language models. This enables unprecedented generalization: classifying modulation types never seen during training, adapting to new channel conditions with few examples, and reasoning about signal properties through natural language interfaces.
+Building wireless foundation models from scratch to address these challenges is prohibitively expensive\cite{radford2021learning}. Unlike images or text, wireless signals exhibit unique characteristics: they are inherently noisy, their structure depends on both transmitter design and channel physics, and their semantic meaning (modulation type, information content) is encoded in subtle statistical patterns rather than explicit visual or linguistic features. Moreover, the space of possible signals is vast and continuously evolving with new communication standards. These properties demand economical approaches that leverage existing world knowledge rather than massive isolated training.
+
+This dissertation presents a modular and cost-effective framework for wireless foundation models through world knowledge integration. Our approach will validate three essential components that work synergistically: (1) a \textbf{rich feature encoder} using self-supervised representation learning (DenoMAE) to approximate world knowledge of signal representations through unsupervised learning on unlabeled signals; (2) an \textbf{intelligent reasoning engine} demonstrating proof-of-concept LLM integration that performs open-set classification by converting statistical signal features into natural language prompts, enabling training-free, one-shot classification through in-context learning; (3) an \textbf{adaptation module} using meta-learning (Meta-Task) to enable rapid knowledge transfer to new modulation schemes and channel conditions with minimal labeled data. 
+
+Our central innovation lies in the strategic, modular design that achieves foundation model capabilities economically. The framework will incorporate DenoMAE's~\cite{faysal2025denomae} hybrid generative-discriminative learning to produce rich signal representations, which are then fed into an improved, more cost-effective and efficient version of plug-and-play~\cite{rostami2025plug}, a discriminative classifier designed for robust automatic modulation classification across varying SNR conditions. Cost-effectiveness will be achieved through self-supervised pre-training methods that dramatically reduce labeled data requirements and through LLM integration that enables prompt-based optimization\cite{}, human-understandable interaction, and competitive performance without exhaustive training across scenarios. By demonstrating proof-of-concept for each component—rich encoders, LLM-based reasoning, and meta-learning adaptation—we will provide both a practical pathway and conceptual blueprint for achieving foundation model capabilities in wireless communications without prohibitive training costs.
 
 \section{Background and Motivation}
 \label{sec:background}
 
 The concept of foundation models emerged from a simple yet powerful observation: models pre-trained on broad data distributions using self-supervised objectives develop representations that transfer remarkably well to diverse downstream tasks. GPT-4~\cite{achiam2023gpt} with its 1.8 trillion parameters demonstrates language understanding across domains, while vision models like CLIP~\cite{radford2021learning} achieve zero-shot image classification by learning joint vision-language representations. These successes stem from three key ingredients: massive unlabeled datasets, self-supervised pretext tasks that capture domain-invariant structure, and flexible architectures that enable task-specific adaptation.
 
-Wireless communication presents both unique challenges and opportunities for foundation model development. Modern wireless systems generate petabytes of signal data daily, yet most of it remains unlabeled. Deep learning approaches for automatic modulation classification (AMC), channel estimation, and signal detection typically require extensive labeled datasets collected across various channel conditions~\cite{o2017introduction,dai2020deep}. When labeled data is scarce—common for emerging modulation schemes or specialized applications—performance degrades dramatically. The fundamental question becomes: \textit{How can we leverage the vast amounts of unlabeled wireless data to build models that generalize like foundation models in vision and language?}
+Wireless communications, particularly with the evolution toward 6G standards~\cite{fontaine2024towards}, present both unique challenges and compelling opportunities for foundation model development. Modern wireless systems generate petabytes of signal data daily—complex and dynamic time series such as in-phase and quadrature (IQ) samples and Channel Impulse Responses (CIRs) with varying lengths and sampling rates—yet most remains unlabeled. The fundamental question becomes: \textit{How can we build Wireless Physical-Layer Foundation Models (WPFMs) that understand and represent these signals without the prohibitive costs of massive isolated training, while achieving the generalization capabilities of vision and language foundation models?}
 
-Traditional approaches to AMC rely on either likelihood-based methods that assume perfect channel knowledge or feature-based methods that use hand-crafted statistics like higher-order cumulants and cyclostationary features~\cite{swami2000hierarchical,gardner1994cyclostationarity}. Deep learning methods~\cite{o2016convolutional,rajendran2018deep} improved performance but inherited a critical limitation: they learn discriminative features for a fixed set of modulation types, failing catastrophically when encountering unseen schemes. This closed-set assumption is fundamentally incompatible with the open-world nature of modern wireless systems, where new modulation types, coding schemes, and transmission parameters continually emerge.
+\subsection{Evolution of Deep Learning for Automatic Modulation Classification}
 
-Recent advances in self-supervised learning offer promising directions. Contrastive methods like SimCLR~\cite{chen2020simple} and MoCo~\cite{he2020momentum} learn representations by contrasting augmented views, while masked autoencoders (MAE)~\cite{he2022masked} learn by reconstructing masked input regions. In natural language processing, BERT~\cite{devlin2019bert} demonstrated that masked language modeling captures rich contextual representations. However, directly applying these techniques to wireless signals faces several obstacles:
+Traditional approaches to AMC relied on likelihood-based methods assuming perfect channel knowledge or feature-based methods using hand-crafted statistics like higher-order cumulants and cyclostationary features~\cite{swami2000hierarchical,gardner1994cyclostationarity,azzouz1995automatic}. The advent of deep learning transformed this landscape, with CNNs~\cite{o2016convolutional,peng2017modulation} demonstrating superior performance by automatically learning discriminative features from raw signals.
 
-\begin{itemize}
-    \item \textbf{Domain Gap:} Unlike images or text, wireless signals lack explicit semantic content. The "meaning" resides in subtle statistical properties shaped by modulation schemes and channel physics.
-    
-    \item \textbf{Noise as Information:} In vision, noise is typically treated as corruption to be removed. In wireless systems, noise characteristics contain valuable information about channel conditions and signal quality.
-    
-    \item \textbf{Multimodal Structure:} Wireless signals naturally exist in multiple representations (time-domain IQ samples, frequency spectra, constellation diagrams), each revealing different aspects of the signal structure.
-    
-    \item \textbf{Open-Set Challenge:} Real wireless systems must recognize and adapt to modulation schemes not seen during training, requiring reasoning beyond pattern matching.
-\end{itemize}
+Early CNN-based approaches~\cite{peng2018modulation} converted modulated signals into constellation diagrams and applied architectures like AlexNet, achieving 82.8\% accuracy but requiring 800,000 training samples. Subsequent refinements introduced specialized architectures: MCNet~\cite{huynh2020mcnet} incorporated skip connections and asymmetric kernels to capture spatio-temporal correlations, while multi-representation frameworks~\cite{samarkandi2023combined} combined constellation diagrams, ambiguity functions, and eye diagrams, demonstrating that constellation diagrams consistently outperformed other representations.
 
-Meta-learning provides complementary capabilities for rapid adaptation. Approaches like Model-Agnostic Meta-Learning (MAML)~\cite{finn2017model} and Prototypical Networks~\cite{snell2017prototypical} enable models to learn from few examples by training on distributions of tasks. In wireless contexts, meta-learning has shown promise for adapting to new channel conditions~\cite{lotfi2024meta} and recognizing novel modulation types~\cite{doha2025deep} with limited samples. However, existing meta-learning approaches struggle with three key limitations: poor cross-domain transfer when task distributions shift significantly, sensitivity to episode construction quality, and failure to leverage abundant unlabeled data within each episode.
+\subsection{Transformer-Based Approaches and Attention Mechanisms}
 
-The missing piece in this puzzle is bridging representation learning and reasoning. Recent work on vision-language models demonstrates that learned visual representations can be grounded in natural language, enabling zero-shot classification through text prompts~\cite{radford2021learning}. We hypothesize that wireless signal encodings learned through multimodal masked autoencoders can similarly serve as semantic features for language model reasoning, enabling open-set recognition of modulation types through description rather than just pattern matching.
+The introduction of transformers~\cite{vaswani2017attention} to wireless communications marked a paradigm shift in AMC. Transformers' self-attention mechanisms excel at capturing long-range dependencies in sequential data, proving especially effective in low SNR scenarios where local features may be obscured by noise. Cai et al.~\cite{cai2022signal} demonstrated that transformer networks (TRN) outperform CNNs by learning extensive dependencies critical for distinguishing modulation schemes.
+
+Building on this foundation, Kong et al.~\cite{kong2023transformer} enhanced transformer-based AMC by incorporating convolutional embedding, attention bias, and attention pooling. Their approach employed contrastive learning on unlabeled data during pre-training, followed by fine-tuning on limited labeled samples—a strategy particularly valuable for real-world scenarios with scarce labeled data. Qu et al.~\cite{qu2024enhancing} further advanced the field by proposing hybrid architectures combining transformers with LSTMs, addressing long-range temporal dependencies while introducing segment substitution as a data augmentation technique to emphasize modulation-specific features.
+
+Vision Transformers (ViTs)~\cite{dosovitskiy2020image} adapted for wireless signals through constellation diagrams achieved remarkable results. Our NMformer~\cite{} trained a ViT on 106,800 constellation images, demonstrating 71.6\% accuracy with fine-tuning on only 3,000 images, significantly outperforming the base classifier across diverse SNR conditions (0.5 dB to 9.5 dB). This success validated that transformer architectures, when properly adapted to wireless signal representations, achieve superior generalization with minimal data.
+
+\subsection{Self-Supervised Learning and Masked Autoencoders}
+
+Recent advances in self-supervised learning offer promising directions for learning universal representations with reduced labeled data requirements. Masked autoencoders (MAE)~\cite{he2022masked} learn by reconstructing masked input regions in vision, while BERT~\cite{devlin2019bert} demonstrates that masked language modeling captures rich contextual representations. Contrastive methods like SimCLR~\cite{chen2020simple} and MoCo~\cite{he2020momentum} learn representations by contrasting augmented views.
+
+We extended these concepts to wireless signals through DenoMAE~\cite{}, a multimodal masked autoencoder that treats noise explicitly as an informative modality rather than mere corruption. DenoMAE processes time-domain IQ samples and constellation diagrams through modality-specific encoders, masking 75\% of input patches and reconstructing both signal content and noise characteristics. This approach achieved 83.5\% accuracy with only 10,000 unlabeled pretraining samples and 1,000 labeled fine-tuning samples—representing 10× and 3× reductions respectively compared to existing approaches. Critically, DenoMAE demonstrated robust performance across varying SNRs (-10 dB to 10 dB) and extrapolation capabilities on unseen lower SNRs, with accuracy gains up to 22.1\% over non-pre-trained models at -10 dB.
+
+DenoMAE 2.0~\cite{} enhanced this framework by introducing auxiliary patch-level classification alongside global reconstruction, combining generative and discriminative learning objectives. This hybrid approach learns representations capturing both fine-grained local modulation-specific patterns and global signal structure, improving low-SNR performance through enhanced local feature discrimination. The hybrid generative-discriminative strategy addresses a fundamental limitation of purely reconstruction-based self-supervised learning: reconstructing masked regions may not capture the discriminative features necessary for downstream classification tasks.
+
+\subsection{Language Model Integration for Wireless Classification}
+
+Large Language Models (LLMs) have demonstrated remarkable capabilities in reasoning, few-shot learning, and transferring knowledge across domains through in-context learning~\cite{brown2020language}. Their ability to understand structured prompts and perform inference based on descriptions presents an unexplored opportunity for wireless communications: \textit{Can we bridge wireless signal understanding and language model reasoning by converting statistical signal features into natural language prompts?}
+
+Our plug-and-play framework~\cite{} provides a pioneering proof-of-concept for this vision. By computing higher-order statistics and cumulants from wireless signals and converting them into structured natural language prompts, we enable pre-trained LLMs to perform training-free, one-shot modulation classification. Using models ranging from DeepSeek-R1-Distill-Qwen (7B and 32B parameters) to OpenAI's o3-mini (200B parameters), we demonstrated that incorporating exemplar context (I+C+S prompts) substantially improves performance compared to instruction-only prompts (I+S), achieving up to 72.4\% cleaned accuracy under noisy conditions with o3-mini.
+
+This approach validates three critical insights: (1) sophisticated decision-making need not be trained from scratch but can leverage pre-trained LLMs' reasoning; (2) the semantic gap between statistical signal properties and linguistic descriptions can be bridged through careful prompt engineering; (3) training-free LLM-based classification achieves competitive performance compared to extensively trained neural networks, drastically reducing deployment costs while providing interpretability—a critical requirement for wireless systems.
+
+\subsection{Meta-Learning for Few-Shot Adaptation}
+
+Meta-learning provides complementary capabilities for rapid adaptation, enabling models to learn from few examples by training on distributions of tasks. Approaches like Model-Agnostic Meta-Learning (MAML)~\cite{finn2017model} and Prototypical Networks~\cite{snell2017prototypical} have shown promise in wireless contexts. However, applying meta-learning to wireless signals reveals several fundamental limitations that our research addresses.
+
+\textbf{Episode Construction and Binary Classification:} Standard meta-learning episodes randomly select classes without considering inter-class or intra-class distance, which proves suboptimal for binary classification scenarios where one class encompasses multiple diverse categories. Our BEpiC framework~\cite{} addresses this through strategic episode generation: using PCA for dimensionality reduction to identify cluster centroids, selecting representative samples closest to centroids, and employing ORB feature matching to quantify dissimilarity between classes. On Caltech256, BEpiC achieved 63.5\% accuracy in 2-way 1-shot scenarios compared to 60.5\% for regular episodes, with even greater improvements (72.8\% vs. 70.9\%) in 5-shot settings. Combining regular and BEpiC episodes (Regular+BEpiC) further enhanced performance by effectively doubling the sample diversity, demonstrating faster convergence and improved generalization.
+
+\textbf{Task-Aware Regularization:} Meta-learning models face significant overfitting challenges when trained on small, variable datasets, tending to memorize rather than generalize to unseen tasks. Conventional regularization techniques (weight decay, dropout, noise injection) prove insufficient for meta-learning's unique requirements of both adaptation-generalization and meta-generalization. Our Meta-Task framework~\cite{} reformulates regularization as a learnable task within the FSL optimization process, introducing parameterized neural layers that dynamically learn task-specific regularization strategies.
+
+The Task-Decoder implementation within Meta-Task employs unsupervised autoencoders to reconstruct input images from embeddings, refining hidden representations by constraining the embedding vector to accurately reconstruct original inputs. This approach proves method-agnostic, seamlessly integrating with Prototypical Networks, MAML, MetaOptNet, and P>M>F across standard benchmarks. On MiniImageNet, Task-Decoder improved Prototypical Networks from 46.6\% to 50.0\% (5-way 1-shot) and 65.4\% to 71.3\% (5-way 5-shot) on TieredImageNet, demonstrating superior meta-generalization. Critically, these improvements occurred with faster convergence, achieving higher accuracy within 20k episodes compared to baseline methods requiring 50k episodes, while maintaining minimal computational overhead through shallow decoder architectures (75K-250K parameters).
+
+\subsection{The Missing Piece: A Unified, Modular Framework}
+
+While each of these advances addresses specific challenges, the missing piece is a unified, modular framework that combines these capabilities economically. Recent work on vision-language models demonstrates that learned visual representations can be grounded in natural language~\cite{radford2021learning}. We propose to extend this insight to wireless communications through a strategic, modular design:
+
+\begin{enumerate}
+    \item \textbf{Rich Feature Encoder:} DenoMAE/DenoMAE 2.0's multimodal masked autoencoders with noise as an informative modality, learning universal wireless representations through self-supervised learning on unlabeled signals (80\% labeled data reduction)
+    \item \textbf{Intelligent Reasoning Engine:} LLM integration for training-free, one-shot classification through statistical feature-to-language prompt conversion, transferring pre-trained reasoning to wireless domain
+    \item \textbf{Hybrid Architecture:} Combining DenoMAE 2.0's rich representations with improved plug-and-play classifiers for robust performance across SNR conditions (-10 dB to 30+ dB)
+    \item \textbf{Adaptation Module:} Meta-Task learning with optimized episode generation (BEpiC) and task-aware regularization, enabling rapid adaptation with 5-10 labeled examples
+\end{enumerate}
+
+This strategic integration offers a practical pathway to foundation model capabilities without prohibitive training costs, validating that wireless foundation models need not be built through massive isolated training but through intelligent combination of self-supervised representation learning, training-free LLM-based reasoning, hybrid generative-discriminative architectures, and meta-learning adaptation.
 
 \subsection{Challenges in Wireless Communication}
 
 Building foundation models for wireless signals requires addressing fundamental challenges that distinguish this domain from vision and language:
 
 \begin{itemize}
-    \item \textbf{Signal Corruption and Noise Variability:} Unlike additive noise in images, wireless signals experience channel-dependent corruption including fading, multipath interference, and time-varying distortion. Signal-to-noise ratios can range from -10 dB to 30+ dB within the same system, requiring representations robust across this spectrum. Traditional approaches treat noise as pure corruption, but it actually contains information about channel physics and transmission conditions.
+    \item \textbf{SNR Imbalance and Condition-Specific Performance:} Existing models overlook critical distinctions between low and high SNR conditions\cite{}, resulting in uneven classification performance. Low SNR signals obscured by noise require fundamentally different feature extraction strategies compared to high SNR signals\cite{}. Traditional monolithic models cannot adequately handle this performance imbalance\cite{}. We propose to address this through DenoMAE's hybrid generative-discriminative learning that captures both global and local patterns, combined with an improved plug-and-play discriminative classifier\cite{}, designed to handle varying SNR conditions robustly, ensuring consistent performance across the full SNR spectrum.
     
-    \item \textbf{Lack of Semantic Grounding:} Images depict recognizable objects; text conveys explicit meaning. Wireless signals encode information through abstract statistical properties (symbol distributions, spectral characteristics, temporal patterns) that lack inherent semantic content. This makes it unclear how to learn representations that capture "meaning" rather than just pattern matching.
+    \item \textbf{Data Scarcity and Labeling Costs:} Acquiring high-quality labeled RF signal data demands specialized equipment and expertise, making large-scale labeled dataset collection prohibitively expensive\cite{}. Unlike vision or language domains where crowdsourcing enables massive labeled datasets\cite{}, wireless signals require domain experts and controlled RF environments for annotation. Foundation models must leverage self-supervised learning\cite{} on abundant unlabeled signals to dramatically reduce labeled data requirements, achieving high accuracy with minimal supervision.
     
-    \item \textbf{Open-Set Reality:} Wireless systems continuously encounter new modulation schemes, emerging standards, and adversarial signals. Models must recognize when they see something novel rather than forcing every signal into known categories. Current AMC systems fail catastrophically on out-of-distribution signals, making closed-set assumptions untenable.
+    \item \textbf{Lack of Semantic Grounding and Interpretability:} Images depict recognizable objects; text conveys explicit meaning. Wireless signals encode information through abstract statistical properties (symbol distributions, spectral characteristics, temporal patterns) that lack inherent semantic content\cite{}. Current deep learning AMC systems provide no interpretability—they are black boxes incapable of explaining decisions or enabling human-understandable interaction\cite{}. Foundation models must bridge this semantic gap, converting quantitative signal features into structured natural language representations that enable both LLM reasoning and human comprehension.
     
-    \item \textbf{Multimodal Representational Complexity:} The same wireless signal manifests differently across time-domain IQ samples, frequency spectra, constellation diagrams, and cyclostationary features. Each representation emphasizes different signal properties. Foundation models must integrate these complementary views to build comprehensive understanding.
+    \item \textbf{Signal Corruption and Noise Variability:} Unlike additive noise in images, wireless signals experience channel-dependent corruption including fading, multipath interference, and time-varying distortion\cite{}. Signal-to-noise ratios can range from -10 dB to 30+ dB within the same system, requiring representations robust across this spectrum\cite{}. Traditional approaches treat noise as pure corruption, but it actually contains information about channel physics and transmission conditions\cite{} that foundation models should exploit as an informative modality.
     
-    \item \textbf{Task Diversity and Adaptation:} A wireless foundation model should support not just classification but also denoising, channel estimation, signal generation, and cross-modulation transfer. Unlike vision models trained for recognition, wireless models need representations that enable both analysis and synthesis tasks with minimal task-specific modification.
+    \item \textbf{Open-Set Reality and Continuous Evolution:} Wireless systems continuously encounter new modulation schemes, emerging standards (e.g., 6G), and adversarial signals\cite{}. Models must recognize when they encounter novel signal types rather than forcing everything into known categories—a capability absent in current closed-set AMC systems\cite{}. Foundation models require representations enabling not just classification of known schemes but detection and characterization of novel signals through compositional understanding and reasoning\cite{}.
     
-    \item \textbf{Limited Labeled Data for Rare Schemes:} While unlabeled wireless data is abundant, obtaining labels for emerging or proprietary modulation schemes is prohibitively expensive. Foundation models must leverage unlabeled pre-training to enable few-shot or zero-shot recognition of new signal types.
+    \item \textbf{Multimodal Representational Complexity:} The same wireless signal manifests differently across time-domain IQ samples, frequency spectra, constellation diagrams, and cyclostationary features\cite{}, with varying lengths and sampling rates. Each representation emphasizes different signal properties\cite{}. Foundation models must integrate these complementary views through multimodal processing\cite{} to build comprehensive understanding, while remaining flexible to diverse signal formats.
+    
+    \item \textbf{Task Diversity and Rapid Adaptation Requirements:} A wireless foundation model should support not just classification but also denoising, channel estimation, signal generation, and cross-modulation transfer\cite{} with minimal task-specific modification. Unlike vision models trained primarily for recognition\cite{}, wireless models need representations enabling both analysis and synthesis. Moreover, they must rapidly adapt to new deployment scenarios with few labeled examples, requiring efficient meta-learning capabilities\cite{} beyond standard transfer learning\cite{}.
+    
+    \item \textbf{Deployment Cost and Computational Constraints:} Training massive foundation models from scratch for each wireless deployment scenario is computationally prohibitive\cite{}. Real-world wireless systems require cost-effective solutions that leverage existing world knowledge—from pre-trained LLMs' reasoning capabilities to self-supervised representations learned once and transferred broadly—rather than exhaustive training across all possible channel conditions, modulation schemes, and SNR ranges.
 \end{itemize}
 
-These challenges motivated our three-stage approach: learning universal representations through multimodal masked autoencoders, enabling rapid adaptation through meta-learning, and achieving open-set recognition through language model integration.
+These challenges motivated our modular, cost-effective framework: learning universal representations through multimodal masked autoencoders (addressing data scarcity and multimodal complexity), enabling training-free reasoning through LLM integration (providing interpretability and open-set capability), ensuring condition-specific robustness through modular architectures (handling SNR imbalance), and achieving rapid adaptation through meta-learning (enabling efficient knowledge transfer).
 
 \subsection{Limitations in Few-Shot Learning}
 
 Meta-learning provides crucial capabilities for foundation models—enabling rapid adaptation to new tasks with minimal data. However, applying meta-learning to wireless signals reveals several limitations:
 
 \begin{itemize}
-    \item \textbf{Representation Quality Bottleneck:} Most meta-learning approaches focus on adaptation mechanisms (how to fine-tune) rather than representation learning (what features to learn). Poor initial representations limit adaptation effectiveness regardless of meta-learning sophistication. Standard episodic training typically learns task-agnostic embeddings that miss domain-specific structure.
+    \item \textbf{Representation Quality Bottleneck:} Most meta-learning approaches focus on adaptation mechanisms (how to fine-tune) rather than representation learning (what features to learn)\cite{}. Poor initial representations limit adaptation effectiveness regardless of meta-learning sophistication\cite{}. Standard episodic training typically learns task-agnostic embeddings that miss domain-specific structure\cite{}.
     
-    \item \textbf{Episode Construction Suboptimality:} Meta-learning performance critically depends on task distribution during training. Random episode sampling creates tasks of varying difficulty and informativeness. Easy episodes waste computation; impossible episodes provide no signal. Optimal episode construction for wireless signals—considering SNR variation, modulation similarity, and channel diversity—remains unexplored.
+    \item \textbf{Episode Construction Suboptimality:} Meta-learning performance critically depends on task distribution during training\cite{}. Random episode sampling creates tasks of varying difficulty and informativeness\cite{}. Easy episodes waste computation; impossible episodes provide no signal. Optimal episode construction for wireless signals—considering SNR variation, modulation similarity, and channel diversity—remains unexplored.
     
-    \item \textbf{Unlabeled Data Underutilization:} Wireless systems generate massive unlabeled signal streams, yet meta-learning typically requires labeled support sets. Each episode contains rich self-supervised learning opportunities within support and query examples that standard meta-learners ignore. Leveraging unlabeled data within episodes could dramatically improve representation quality.
+    \item \textbf{Unlabeled Data Underutilization:} Wireless systems generate massive unlabeled signal streams\cite{}, yet meta-learning typically requires labeled support sets\cite{}. Each episode contains rich self-supervised learning opportunities within support and query examples that standard meta-learners ignore\cite{}. Leveraging unlabeled data within episodes could dramatically improve representation quality.
     
-    \item \textbf{Cross-Domain Generalization Failure:} Meta-learners trained on synthetic datasets (like RadioML) often fail on real over-the-air signals due to distributional shift. The model learns to adapt within the training distribution but cannot generalize to different noise profiles, hardware impairments, or channel characteristics. Foundation models must learn invariances that transfer across domains.
+    \item \textbf{Cross-Domain Generalization Failure:} Meta-learners trained on synthetic datasets (like RadioML\cite{}) often fail on real over-the-air signals due to distributional shift\cite{}. The model learns to adapt within the training distribution but cannot generalize to different noise profiles, hardware impairments, or channel characteristics\cite{}. Foundation models must learn invariances that transfer across domains.
     
-    \item \textbf{Overfitting to Task Distribution:} Models can overfit to the specific set of modulation types, SNR ranges, and channel models in meta-training, learning spurious correlations rather than fundamental signal properties. This limits zero-shot generalization to truly novel scenarios outside the meta-training distribution.
+    \item \textbf{Overfitting to Task Distribution:} Models can overfit to the specific set of modulation types, SNR ranges, and channel models in meta-training, learning spurious correlations rather than fundamental signal properties\cite{}. This limits zero-shot generalization to truly novel scenarios outside the meta-training distribution.
     
-    \item \textbf{Lack of Interpretability and Reasoning:} Meta-learners adapt through gradient descent or metric learning but cannot explain their decisions or reason about signal properties. For wireless applications requiring trust and verification (military, regulatory), pure pattern-matching adaptation is insufficient. Integration with language models could enable interpretable reasoning.
+    \item \textbf{Lack of Interpretability and Reasoning:} Meta-learners adapt through gradient descent or metric learning but cannot explain their decisions or reason about signal properties\cite{}. For wireless applications requiring trust and verification (military, regulatory), pure pattern-matching adaptation is insufficient\cite{}. Integration with language models could enable interpretable reasoning.
 \end{itemize}
 
 These limitations motivated our development of episodic representation learning (MetaRep), optimized episode generation (BEpiC), and task-aware regularization (Meta-Task) specifically designed for wireless foundation model development.
@@ -87,19 +130,19 @@ These limitations motivated our development of episodic representation learning 
 Building foundation models requires representations that transcend specific tasks and transfer broadly. Both wireless communication and meta-learning face common representation learning challenges:
 
 \begin{itemize}
-    \item \textbf{Task-Feature Misalignment:} Standard masked autoencoding objectives (predict missing regions) learn representations optimized for reconstruction rather than discrimination or reasoning. For wireless signals, reconstructing masked IQ samples may not capture modulation-specific features necessary for classification or open-set recognition. The gap between self-supervised pretext tasks and downstream objectives limits transfer effectiveness.
+    \item \textbf{Task-Feature Misalignment:} Standard masked autoencoding objectives (predict missing regions) learn representations optimized for reconstruction rather than discrimination or reasoning\cite{}. For wireless signals, reconstructing masked IQ samples may not capture modulation-specific features necessary for classification or open-set recognition\cite{}. The gap between self-supervised pretext tasks and downstream objectives limits transfer effectiveness\cite{}.
     
-    \item \textbf{Modality Integration:} Wireless signals naturally exist in multiple modalities (time-domain, frequency-domain, constellation diagrams), each emphasizing different properties. Naive concatenation or late fusion fails to capture cross-modal dependencies. Foundation models must learn joint representations where modalities inform and disambiguate each other, especially under noise.
+    \item \textbf{Modality Integration:} Wireless signals naturally exist in multiple modalities (time-domain, frequency-domain, constellation diagrams)\cite{}, each emphasizing different properties. Naive concatenation or late fusion fails to capture cross-modal dependencies\cite{}. Foundation models must learn joint representations where modalities inform and disambiguate each other, especially under noise.
     
-    \item \textbf{Noise as Modality vs. Corruption:} Standard representation learning treats noise as corruption to overcome. In wireless systems, noise patterns encode channel state and signal quality information crucial for adaptation. Learning to leverage noise as an informative modality rather than merely being robust to it represents a paradigm shift requiring novel architectures.
+    \item \textbf{Noise as Modality vs. Corruption:} Standard representation learning treats noise as corruption to overcome\cite{}. In wireless systems, noise patterns encode channel state and signal quality information crucial for adaptation\cite{}. Learning to leverage noise as an informative modality rather than merely being robust to it represents a paradigm shift requiring novel architectures.
     
-    \item \textbf{Computational Efficiency:} Large-scale self-supervised learning typically requires enormous batch sizes (SimCLR needs 4096+) and computational resources. Wireless edge devices and real-time systems demand efficient alternatives. Foundation model pre-training must balance representation quality with practical deployment constraints.
+    \item \textbf{Computational Efficiency:} Large-scale self-supervised learning typically requires enormous batch sizes (SimCLR needs 4096+\cite{chen2020simple}) and computational resources\cite{}. Wireless edge devices and real-time systems demand efficient alternatives\cite{}. Foundation model pre-training must balance representation quality with practical deployment constraints.
     
-    \item \textbf{Semantic Grounding:} Vision models leverage natural image statistics; language models exploit linguistic structure. Wireless signals lack inherent semantic content—their "meaning" emerges from technical specifications and physical principles. Grounding wireless representations in natural language descriptions (e.g., "QPSK with raised cosine filtering") could enable reasoning and zero-shot generalization through language model integration.
+    \item \textbf{Semantic Grounding:} Vision models leverage natural image statistics\cite{}; language models exploit linguistic structure\cite{}. Wireless signals lack inherent semantic content—their "meaning" emerges from technical specifications and physical principles\cite{}. Grounding wireless representations in natural language descriptions (e.g., "QPSK with raised cosine filtering") could enable reasoning and zero-shot generalization through language model integration.
     
-    \item \textbf{Supervised-Unsupervised Integration:} Effectively combining labeled and unlabeled data remains challenging. Most approaches treat them as separate learning stages (pre-train then fine-tune) rather than joint objectives. For wireless foundation models, simultaneously leveraging massive unlabeled signals and limited labeled examples through unified loss functions could improve both representation quality and task performance.
+    \item \textbf{Supervised-Unsupervised Integration:} Effectively combining labeled and unlabeled data remains challenging\cite{}. Most approaches treat them as separate learning stages (pre-train then fine-tune) rather than joint objectives\cite{}. For wireless foundation models, simultaneously leveraging massive unlabeled signals and limited labeled examples through unified loss functions could improve both representation quality and task performance.
     
-    \item \textbf{Open-Set Recognition Gap:} Standard representation learning assumes closed-set downstream tasks. Foundation models must produce representations that enable not just classification of known classes but detection and characterization of novel signal types. This requires representations capturing interpretable, compositional features rather than just discriminative boundaries.
+    \item \textbf{Open-Set Recognition Gap:} Standard representation learning assumes closed-set downstream tasks\cite{}. Foundation models must produce representations that enable not just classification of known classes but detection and characterization of novel signal types\cite{}. This requires representations capturing interpretable, compositional features rather than just discriminative boundaries.
 \end{itemize}
 
 Addressing these challenges requires rethinking representation learning architectures, objectives, and integration strategies—the core focus of this dissertation.
@@ -107,66 +150,75 @@ Addressing these challenges requires rethinking representation learning architec
 \section{Objectives and Motivation}
 \label{sec:objective}
 
-The central objective of this dissertation is to establish foundational principles and practical methodologies for developing wireless physical foundation models—universal representations of wireless signals that enable generalization across modulation schemes, channel conditions, and tasks with minimal adaptation. This ambitious goal requires bridging three traditionally separate research areas: self-supervised representation learning, meta-learning for rapid adaptation, and language-grounded reasoning for open-set recognition.
+The central objective of this dissertation is to establish foundational principles and practical methodologies for developing Wireless Physical-Layer Foundation Models (WPFMs)—universal representations of wireless signals that enable generalization across modulation schemes, channel conditions, and tasks through economical world knowledge integration. Rather than building massive models from scratch, this work demonstrates that strategic modular design combining self-supervised learning, LLM reasoning, and meta-learning adaptation achieves foundation model capabilities cost-effectively.
 
 \subsection{Vision: Wireless Foundation Models}
 
 We envision wireless foundation models analogous to CLIP in vision or GPT in language: pre-trained on diverse, unlabeled signals to learn representations encoding fundamental wireless signal properties, then adapted to specific tasks (classification, denoising, channel estimation) with minimal fine-tuning. Such models would:
 
 \begin{itemize}
-    \item \textbf{Generalize Across Modulations:} Recognize modulation schemes never encountered during training through compositional understanding of signal properties
-    \item \textbf{Adapt to Channel Conditions:} Handle varying SNR, fading, and interference without retraining
-    \item \textbf{Enable Zero-Shot Recognition:} Classify signals based on textual descriptions of their properties
-    \item \textbf{Support Multi-Task Applications:} Serve as foundation for classification, denoising, synthesis, and estimation
-    \item \textbf{Provide Interpretable Reasoning:} Explain decisions through natural language rather than opaque neural activations
+    \item \textbf{Generalize Across Modulations:} Recognize modulation schemes never encountered during training through compositional understanding of signal properties, enabled by rich learned representations
+    \item \textbf{Handle SNR Imbalance Robustly:} Employ hybrid generative-discriminative learning (DenoMAE) combined with robust discriminative classifiers (improved plug-and-play), ensuring consistent performance from -10 dB to 30+ dB
+    \item \textbf{Operate Cost-Effectively:} Enable training-free or few-shot deployment through LLM integration and self-supervised pre-training, avoiding exhaustive retraining for each scenario
+    \item \textbf{Adapt Rapidly with Minimal Data:} Leverage meta-learning to quickly specialize for new deployment scenarios with few labeled examples, dramatically reducing data requirements
+    \item \textbf{Provide Interpretable Reasoning:} Convert signal features to natural language prompts for LLM-based classification, enabling human-understandable explanations and prompt-based optimization
+    \item \textbf{Leverage World Knowledge:} Integrate pre-trained LLMs' reasoning capabilities to approximate and transfer existing knowledge rather than learning everything from scratch
 \end{itemize}
 
 \subsection{Research Questions}
 
-This dissertation addresses four fundamental questions toward realizing this vision:
+This dissertation addresses four fundamental questions toward realizing cost-effective wireless foundation models:
 
-\textbf{RQ1: How can we learn universal representations from unlabeled wireless signals?}
+\textbf{RQ1: How can we learn universal representations from unlabeled wireless signals economically?}
 \begin{itemize}
     \item What self-supervised objectives capture modulation-specific features beyond superficial reconstruction?
-    \item How should multimodal signals (time-domain, constellation diagrams) be jointly encoded?
-    \item Can noise be treated as an informative modality rather than mere corruption?
+    \item How can multimodal processing (time-domain IQ, constellation diagrams) improve representation quality?
+    \item Can noise be treated as an informative modality rather than mere corruption, providing channel information?
+    \item How much labeled data reduction is achievable through effective self-supervised pre-training?
 \end{itemize}
 
-\textbf{RQ2: How can meta-learning enable rapid adaptation to new signal types?}
+\textbf{RQ2: Can LLMs enable training-free wireless classification through world knowledge transfer?}
+\begin{itemize}
+    \item Can statistical signal features (cumulants, spectral properties) be converted to natural language prompts for LLM reasoning?
+    \item Do pre-trained LLMs' in-context learning capabilities transfer to wireless signal classification without fine-tuning?
+    \item What bridges the semantic gap between quantitative signal properties and linguistic descriptions?
+    \item How competitive is training-free LLM-based classification compared to extensively trained task-specific models?
+\end{itemize}
+
+\textbf{RQ3: How can hybrid architectures combine generative and discriminative learning for robust performance across SNR conditions?}
+\begin{itemize}
+    \item Can DenoMAE's hybrid generative-discriminative learning capture both global and local patterns effectively across SNR regimes?
+    \item How should self-supervised representations be integrated with discriminative classifiers (improved plug-and-play) for optimal SNR robustness?
+    \item What architectural designs best leverage both reconstruction and discrimination objectives for condition-invariant features?
+    \item How does the DenoMAE + improved plug-and-play classifier pipeline improve adaptability to diverse channel characteristics compared to monolithic models?
+\end{itemize}
+
+\textbf{RQ4: How can meta-learning enable rapid adaptation with minimal labeled data?}
 \begin{itemize}
     \item What episodic training strategies maximize generalization for wireless tasks?
     \item Can unsupervised representation learning within episodes improve meta-learning?
     \item How can we regularize meta-learners to prevent overfitting while maintaining adaptability?
-\end{itemize}
-
-\textbf{RQ3: Can wireless signal encodings enable language-grounded reasoning?}
-\begin{itemize}
-    \item Do learned wireless representations capture semantic properties describable in natural language?
-    \item Can large language models perform zero-shot AMC given learned signal embeddings?
-    \item What bridges the gap between statistical signal properties and linguistic descriptions?
-\end{itemize}
-
-\textbf{RQ4: How do we integrate these approaches into a unified framework?}
-\begin{itemize}
-    \item What training pipeline connects self-supervised pre-training, meta-learning, and LLM integration?
-    \item Can the same learned encodings serve multiple downstream tasks?
-    \item What design principles enable wireless foundation models at practical computational scales?
+    \item What design principles enable efficient knowledge transfer across channel conditions and modulation schemes?
 \end{itemize}
 
 \subsection{Technical Approach}
 
-To address these questions, we develop a three-stage framework:
+To address these questions, we propose to develop a modular, cost-effective framework that will achieve foundation model capabilities through world knowledge integration rather than massive isolated training:
 
-\textbf{Stage 1: Self-Supervised Representation Learning}
-We design multimodal masked autoencoders (DenoMAE, DenoMAE 2.0) that learn universal wireless signal representations by reconstructing masked regions across time-domain and constellation diagram modalities. Crucially, we treat noise as an explicit modality providing information about channel conditions. The learned encoder produces embeddings capturing both local patch-level patterns and global signal structure.
+\textbf{Component 1: Rich Feature Encoder via Self-Supervised Learning}
+We will develop DenoMAE—multimodal masked autoencoders that learn universal wireless signal representations through unsupervised learning on unlabeled signals. These models will approximate world knowledge of signal representations by: (1) treating noise as an informative modality capturing channel physics rather than pure corruption; (2) jointly reconstructing masked regions across time-domain IQ samples and constellation diagrams through modality-specific encoders; (3) combining reconstruction (generative) with local patch classification (discriminative) objectives for richer representations. The learned encoders will produce embeddings capturing both local patch-level patterns and global signal structure, demonstrating that unsupervised learning can extract rich, transferable wireless features while dramatically reducing labeled data requirements (achieving high accuracy with 80\% fewer labeled examples).
 
-\textbf{Stage 2: Meta-Learning for Rapid Adaptation}
-We integrate meta-learning strategies (BEpiC for optimal episode generation, MetaRep for episodic representation learning, Meta-Task for task-aware regularization) that enable few-shot adaptation to new modulation schemes. These methods leverage the representations from Stage 1 while learning to quickly specialize for specific signal types with minimal labeled examples.
+\textbf{Component 2: Intelligent Reasoning Engine via LLM Integration}
+We will demonstrate a novel proof-of-concept for utilizing large language models to perform training-free, open-set wireless classification through world knowledge transfer. By converting quantitative statistical signal features (higher-order cumulants, spectral characteristics) into structured natural language prompts, we will enable LLMs to perform one-shot classification leveraging their inherent in-context learning capabilities without wireless-specific training. This component will validate that: (1) sophisticated decision-making need not be trained from scratch but can leverage pre-trained LLMs' reasoning; (2) the semantic gap between statistical signal properties and linguistic descriptions can be bridged through careful prompt engineering; (3) training-free LLM-based classification achieves competitive performance compared to extensively trained neural networks, drastically reducing deployment costs. This represents the most novel aspect of our framework—transferring language model world knowledge to wireless signal understanding.
 
-\textbf{Stage 3: Language Model Integration for Open-Set Recognition}
-We pioneer using DenoMAE encodings as semantic features for large language model reasoning. By projecting learned wireless embeddings into language model input spaces, we enable zero-shot classification through textual descriptions of modulation properties—achieving open-set recognition beyond closed-set pattern matching.
+\textbf{Component 3: Hybrid Architecture for Condition-Specific Robustness}
+We propose to develop a hybrid architecture pipeline combining DenoMAE's rich representation learning with an improved plug-and-play classifier's discriminative classification capabilities, specifically addressing SNR imbalance that plagues monolithic models. DenoMAE will learn robust representations through: (1) multimodal masked autoencoding across time-domain and constellation diagram modalities; (2) hybrid generative-discriminative objectives combining global reconstruction with local patch-level classification; (3) explicit noise modeling treating noise as an informative modality. These learned representations will then be fed into an improved plug-and-play classifier designed for robust automatic modulation classification across varying SNR conditions, ensuring consistent performance across the full SNR spectrum (-10 dB to 30+ dB). This pipeline will enable effective feature extraction and classification without requiring separate specialized models for different operating conditions.
 
-Throughout, we validate on transformer-based architectures (NMformer) and semi-supervised learning frameworks (RLPL) to demonstrate the generality and practical effectiveness of our approach across diverse wireless communication scenarios.
+\textbf{Component 4: Adaptation Module via Meta-Learning}
+We will employ Meta-Task learning strategies that enable the framework to rapidly apply integrated world knowledge to new modulation schemes and channel conditions with minimal labeled data. Through optimized episodic training that: (1) leverages unlabeled data within episodes for representation improvement; (2) employs task-aware regularization preventing overfitting to meta-training distributions; (3) learns adaptation strategies generalizing across diverse wireless tasks. This component will demonstrate that fast adaptation mechanisms allow foundation model concepts to generalize efficiently, achieving strong performance with only 5-10 labeled examples per new modulation type.
+
+\textbf{Framework Integration and Cost-Effectiveness}
+Throughout, we will validate this modular framework on automatic modulation classification and related tasks, demonstrating that strategic combination of these components enables zero-shot (via LLM reasoning), few-shot (via meta-learning), and self-supervised learning without massive isolated model training. The key to cost-effectiveness lies in: (1) self-supervised pre-training learning universal representations from abundant unlabeled data; (2) LLM integration transferring existing language model capabilities to wireless domain without wireless-specific training; (3) modular architectures enabling targeted improvements rather than full system retraining; (4) meta-learning enabling rapid deployment to new scenarios. This approach will provide both proof-of-concept validation for each component and a practical pathway toward next-generation wireless AI systems that are scalable, interpretable, and economically deployable.
 
 \section{Scope}
 \label{sec:scope}
@@ -178,19 +230,19 @@ This dissertation establishes foundational principles for wireless physical foun
 Our core application domain is automatic modulation classification under challenging conditions:
 \begin{itemize}
     \item \textbf{Signal Representations:} We explore time-domain IQ samples, constellation diagrams, and noise patterns as complementary modalities
-    \item \textbf{Operating Conditions:} SNR ranges from -10 dB to 30 dB, covering severe noise to clean signal regimes
-    \item \textbf{Modulation Schemes:} Focus on common digital modulations (BPSK, QPSK, 8PSK, QAM variants, FSK, GFSK) with extensions to emerging schemes
-    \item \textbf{Channel Models:} Primarily AWGN and fading channels representative of practical wireless systems
-    \item \textbf{Datasets:} RadioML2016.10a/b, RadioML2018.01a, and synthetic datasets for controlled experiments
+    \item \textbf{Operating Conditions:} SNR ranges from -10 dB to 30 dB, covering severe noise to clean signal regimes\cite{}
+    \item \textbf{Modulation Schemes:} Focus on common digital modulations (BPSK, QPSK, 8PSK, QAM variants, FSK, GFSK)\cite{} with extensions to emerging schemes
+    \item \textbf{Channel Models:} Primarily AWGN and fading channels\cite{} representative of practical wireless systems
+    \item \textbf{Datasets:} RadioML2016.10a/b\cite{}, RadioML2018.01a\cite{}, and synthetic datasets for controlled experiments
 \end{itemize}
 
 \subsection{Enabling Techniques: Meta-Learning and Semi-Supervised Learning}
 
 To support wireless foundation model development, we advance:
 \begin{itemize}
-    \item \textbf{Few-Shot Learning:} Meta-learning strategies for rapid adaptation to new modulation schemes with minimal labeled examples, validated on standard benchmarks (miniImageNet, CIFAR-FS) to demonstrate generality
-    \item \textbf{Semi-Supervised Learning:} Techniques for leveraging unlabeled data through improved representation learning and pseudo-labeling, applicable to both image classification and wireless signals
-    \item \textbf{Episodic Training:} Optimization of episode generation and representation learning within episodes to improve meta-learner generalization
+    \item \textbf{Few-Shot Learning:} Meta-learning strategies for rapid adaptation to new modulation schemes with minimal labeled examples, validated on standard benchmarks (miniImageNet\cite{}, CIFAR-FS\cite{}) to demonstrate generality
+    \item \textbf{Semi-Supervised Learning:} Techniques for leveraging unlabeled data through improved representation learning\cite{} and pseudo-labeling\cite{}, applicable to both image classification and wireless signals
+    \item \textbf{Episodic Training:} Optimization of episode generation\cite{} and representation learning within episodes to improve meta-learner generalization
 \end{itemize}
 
 \subsection{Novel Contribution: Language-Grounded Wireless Recognition}
@@ -207,154 +259,137 @@ The dissertation's unique contribution lies in bridging wireless signal processi
 
 While this work establishes foundations for wireless AI, certain aspects remain future work:
 \begin{itemize}
-    \item \textbf{End-to-End Communication:} Focus is on physical layer modulation classification, not complete communication system design
-    \item \textbf{Hardware Implementation:} Validation uses simulated and standard datasets rather than custom hardware deployments
-    \item \textbf{Adversarial Robustness:} While noise robustness is central, adversarial attacks and countermeasures are not extensively explored
-    \item \textbf{Multi-User/MIMO Scenarios:} Primarily single-user, single-antenna scenarios; multi-antenna and interference management are secondary
-    \item \textbf{Foundation Model Scale:} Due to computational constraints, models are smaller than vision/language foundation models; principles established here enable future scaling
+    \item \textbf{End-to-End Communication:} Focus is on physical layer modulation classification, not complete communication system design\cite{}
+    \item \textbf{Hardware Implementation:} Validation uses simulated and standard datasets rather than custom hardware deployments\cite{}
+    \item \textbf{Adversarial Robustness:} While noise robustness is central, adversarial attacks\cite{} and countermeasures are not extensively explored
+    \item \textbf{Multi-User/MIMO Scenarios:} Primarily single-user, single-antenna scenarios; multi-antenna\cite{} and interference management are secondary
+    \item \textbf{Foundation Model Scale:} Due to computational constraints, models are smaller than vision/language foundation models\cite{}; principles established here enable future scaling
 \end{itemize}
 
 The techniques developed transcend specific applications, with demonstrated applicability to image classification, general few-shot learning, and semi-supervised scenarios. This positions the work as both a domain-specific contribution to wireless communication and a methodological contribution to representation learning and meta-learning broadly.
 
 \section{Contributions} \label{sec:contributions}
 
-This dissertation makes seven primary technical contributions organized into three thematic areas—wireless representation learning, meta-learning for adaptation, and cross-domain integration—with an overarching contribution establishing the pathway toward wireless foundation models. Each contribution addresses specific challenges while collectively building toward the unified vision of universal wireless signal understanding.
+This dissertation makes primary technical contributions organized into four thematic areas—self-supervised representation learning, LLM-based reasoning, modular architectures, and meta-learning adaptation—with an overarching contribution establishing a practical, cost-effective pathway toward wireless foundation models. Each contribution addresses specific challenges while collectively building toward the unified vision of universal wireless signal understanding through world knowledge integration.
 
-\subsection{Toward Wireless Foundation Models: A Unified Framework}
+\subsection{Toward Wireless Foundation Models: A Modular, Cost-Effective Framework}
 \label{subsec:unified_framework}
 
-\textbf{Central Thesis Contribution:} We establish the first systematic framework integrating self-supervised representation learning, meta-learning, and language model reasoning specifically for wireless signals, demonstrating that:
+\textbf{Central Thesis Contribution:} We propose a modular and cost-effective framework for Wireless Physical-Layer Foundation Models (WPFMs) that strategically approximates and integrates world knowledge, aiming to demonstrate that:
 
 \begin{itemize}
-    \item Multimodal masked autoencoders can learn universal wireless signal representations that transfer across modulation schemes and SNR conditions
-    \item These learned encodings function as semantic features enabling LLM-based open-set recognition
-    \item Meta-learning techniques adapted for wireless signals enable few-shot adaptation to novel modulation types
-    \item The three-stage pipeline (pre-train → meta-learn → fine-tune/reason) provides a practical pathway toward wireless foundation models
+    \item \textbf{Self-Supervised Learning Component:} Multimodal masked autoencoders (DenoMAE) will learn universal wireless signal representations through unsupervised learning on unlabeled data, dramatically reducing labeled data requirements (80\% reduction) while approximating world knowledge of signal patterns
+    \item \textbf{LLM Integration Component:} Large language models can perform training-free, one-shot wireless classification through a novel proof-of-concept that converts statistical signal features to natural language prompts, transferring pre-trained language model reasoning to wireless domain without wireless-specific training
+    \item \textbf{Hybrid Architecture Component:} DenoMAE 's hybrid generative-discriminative learning combined with an improved plug-and-play discriminative classifier will ensure robust performance across SNR conditions (-10 dB to 30+ dB), addressing the critical SNR imbalance problem through rich representation learning and condition-aware classification
+    \item \textbf{Meta-Learning Component:} Meta-Task learning will enable rapid adaptation to novel modulation types with minimal labeled data (5-10 examples), efficiently applying integrated knowledge to new tasks and channel conditions
+    \item \textbf{Cost-Effectiveness Principle:} The key to economical wireless foundation models lies in this strategic, modular framework design that leverages existing world knowledge rather than massive isolated training
 \end{itemize}
 
-This unified perspective represents a paradigm shift from task-specific wireless AI to foundation model thinking, opening new research directions in adaptive communication systems.
+This modular approach will provide both a conceptual blueprint and practical pathway toward next-generation wireless AI systems that are scalable, interpretable, and economically deployable. The framework's modularity will enable: (1) independent component optimization and updates; (2) targeted improvements without full system retraining; (3) flexible integration of future advances in self-supervised learning, LLMs, or meta-learning; (4) cost-effective deployment through training-free operation and minimal data requirements.
 
 \subsection{Self-Supervised Representation Learning for Wireless Signals}
 \label{subsec:wireless_contributions}
 
-\textbf{Contribution 1: NMformer - Vision Transformers for Wireless Signal Classification}
+\textbf{Contribution 1: DenoMAE - Multimodal Masked Autoencoders with Noise as Modality}
 
-We adapt Vision Transformer (ViT) architectures to wireless modulation classification using constellation diagrams as input, demonstrating that:
-\begin{itemize}
-    \item Self-attention mechanisms effectively capture global signal structure robust to noise
-    \item Constellation diagrams provide superior representation compared to time-domain signals for transformer processing
-    \item Patch-based tokenization of constellation images enables efficient processing
-    \item Pre-training on clean signals followed by minimal fine-tuning achieves high accuracy across SNR ranges
-\end{itemize}
-
-\textit{Significance:} Establishes transformers as viable architectures for wireless signal processing and motivates multimodal approaches combining time-domain and constellation representations.
-
-\textbf{Contribution 2: DenoMAE - Multimodal Masked Autoencoders with Noise as Modality}
-
-We introduce DenoMAE, a self-supervised learning framework that:
+We will introduce DenoMAE, a self-supervised learning framework that approximates world knowledge of wireless signal representations:
 \begin{itemize}
     \item Jointly processes time-domain IQ samples and constellation diagrams through modality-specific encoders
     \item Treats noise explicitly as an informative modality rather than corruption to overcome
     \item Masks random patches across modalities and reconstructs both signal content and noise characteristics
-    \item Learns universal encodings transferable to downstream classification with minimal labeled data
-    \item Reduces labeled data requirements by 50-70\% while maintaining competitive accuracy
+    \item Learns universal encodings transferable to downstream classification through unsupervised learning on unlabeled signals
+    \item Will demonstrate that rich feature encoders can be developed economically without massive labeled datasets
 \end{itemize}
 
-\textit{Significance:} Demonstrates that multimodal masked reconstruction with noise modeling learns representations superior to single-modality or supervised approaches, establishing a foundation for self-supervised wireless learning.
+\textit{Significance:} Will validate that multimodal masked reconstruction with noise modeling learns representations superior to single-modality approaches, providing the rich feature encoder component of our modular framework.
 
-\textbf{Contribution 3: DenoMAE 2.0 - Local Patch Classification for Enhanced Representations}
+% \textbf{Contribution 2: DenoMAE - Hybrid Generative-Discriminative Self-Supervised Learning}
 
-We extend DenoMAE with local discriminative objectives:
+% We propose to extend DenoMAE with local discriminative objectives for enhanced representations:
+% \begin{itemize}
+%     \item Introduces auxiliary patch-level classification alongside global reconstruction, combining generative and discriminative learning
+%     \item Learns representations capturing both fine-grained local modulation-specific patterns and global signal structure
+%     \item Improves low-SNR performance through enhanced local feature discrimination, addressing condition-specific challenges
+%     \item Will demonstrate that combining reconstruction and classification objectives yields complementary benefits for wireless signals
+% \end{itemize}
+
+\textit{Significance:} Will show that hybrid generative-discriminative self-supervised learning outperforms purely reconstruction-based approaches, further refining the feature encoder component with richer, more transferable representations.
+
+\subsection{LLM-Based Reasoning for Training-Free Classification}
+\label{subsec:llm_contributions}
+
+\textbf{Contribution 3: Proof-of-Concept LLM Integration for Training-Free, One-Shot Classification}
+
+We will demonstrate a novel proof-of-concept for the intelligent reasoning engine component that achieves cost-effective wireless classification:
+
 \begin{itemize}
-    \item Introduces auxiliary patch-level classification alongside global reconstruction
-    \item Learns representations capturing both fine-grained local patterns and global signal structure
-    \item Improves low-SNR performance through enhanced local feature discrimination
-    \item Demonstrates that combining reconstruction and classification objectives yields complementary benefits
+    \item \textbf{Training-Free Operation via In-Context Learning:} Utilize pre-trained LLMs to perform wireless classification without any wireless-specific training, leveraging their inherent in-context learning (ICL) capabilities for one-shot classification
+    \item \textbf{Statistical Feature to Language Prompt Conversion:} Convert quantitative signal features (higher-order cumulants, spectral characteristics) into structured natural language prompts that enable LLM reasoning about modulation properties
+    \item \textbf{World Knowledge Transfer:} Successfully transfer LLMs' pre-trained world knowledge and reasoning capabilities to the wireless signal domain, demonstrating cross-domain knowledge integration
+    \item \textbf{Competitive Performance Without Training:} Achieve classification accuracy competitive with extensively trained task-specific neural networks, drastically reducing deployment costs and training overhead
+    \item \textbf{Interpretability and Human Interaction:} Enable human-understandable explanations of classification decisions through natural language, facilitating prompt-based optimization and interaction with wireless networks
+    \item \textbf{Modular Integration:} Show that the reasoning component can work with features extracted from the rich encoder (DenoMAE) in a modular framework design
 \end{itemize}
 
-\textit{Significance:} Shows that hybrid generative-discriminative self-supervised learning outperforms purely reconstruction-based approaches, providing design principles for wireless representation learning.
-
-\subsection{Meta-Learning for Rapid Wireless Adaptation}
-\label{subsec:fewshot_contributions}
-
-\textbf{Contribution 4: BEpiC - Binary Episodes for Optimized Meta-Learning}
-
-We develop intelligent episode construction strategies:
-\begin{itemize}
-    \item Introduces binary episode generation prioritizing difficult class pairs to maximize informativeness
-    \item Proposes curriculum learning schedules for episode difficulty progression
-    \item Demonstrates 10-15\% accuracy improvements over random episode sampling in few-shot wireless classification
-    \item Generalizes beyond wireless to standard few-shot benchmarks (miniImageNet, CIFAR-FS)
-\end{itemize}
-
-\textit{Significance:} Reveals that meta-learning performance depends critically on episode quality, not just adaptation algorithms, and provides principled episode construction methods applicable across domains.
-
-\textbf{Contribution 5: MetaRep - Episodic Representation Learning for Meta-Learning}
-
-We integrate unsupervised representation learning within meta-learning episodes:
-\begin{itemize}
-    \item Learns representations from both support and query sets within each episode using self-supervised objectives
-    \item Introduces episodic autoencoders that capture task-specific structure
-    \item Combines episodic representation learning with meta-learning adaptation
-    \item Achieves superior few-shot performance, especially in 1-shot scenarios where labeled data is most limited
-\end{itemize}
-
-\textit{Significance:} Demonstrates that leveraging unlabeled structure within episodes significantly improves meta-learning, bridging self-supervised learning and meta-learning paradigms.
-
-\textbf{Contribution 6: Meta-Task - Method-Agnostic Regularization Framework}
-
-We propose task-aware regularization preventing meta-learner overfitting:
-\begin{itemize}
-    \item Introduces auxiliary reconstruction tasks as regularizers during meta-training
-    \item Provides method-agnostic framework applicable to MAML, ProtoNets, and other meta-learners
-    \item Balances task-specific adaptation with general representation preservation
-    \item Improves cross-domain generalization when test tasks differ from training distribution
-\end{itemize}
-
-\textit{Significance:} Offers a general principle—auxiliary task regularization—for improving meta-learner robustness, applicable beyond wireless to any meta-learning scenario.
-
-\subsection{Cross-Domain Integration: Semi-Supervised Learning}
-\label{subsec:semisupervised_contributions}
-
-\textbf{Contribution 7: RLPL - Representation Learning with Progressive Pseudo-Labeling}
-
-We develop an integrated semi-supervised framework:
-\begin{itemize}
-    \item Combines contrastive representation learning, consistency regularization, and progressive pseudo-labeling
-    \item Achieves competitive accuracy with 4× smaller batch sizes than SimCLR-based methods
-    \item Demonstrates applicability to both image classification and wireless signal classification
-    \item Provides computational efficiency enabling deployment on resource-constrained systems
-\end{itemize}
-
-\textit{Significance:} Shows that carefully integrated semi-supervised techniques can match state-of-the-art performance with dramatically reduced computational requirements, enabling practical wireless foundation model pre-training.
-
-\subsection{Novel Integration: Language-Grounded Wireless Recognition}
-
-\textbf{Emerging Contribution:} Throughout this dissertation, we develop toward the novel capability of using DenoMAE-learned encodings as semantic features for LLM-based wireless signal reasoning:
+\textit{Significance:} This proof-of-concept will validate the feasibility of integrating LLMs as intelligent reasoning engines for cost-effective wireless applications, demonstrating that pre-trained world knowledge from language models can be successfully transferred to the wireless signal domain without exhaustive training across scenarios. This represents the most novel aspect of our modular framework—enabling foundation model reasoning capabilities economically through world knowledge integration.
 
 \begin{itemize}
-    \item \textbf{Semantic Feature Extraction:} DenoMAE encodings capture interpretable signal properties (symbol constellation structure, noise characteristics, temporal patterns) rather than just discriminative features
+    \item \textbf{Statistical Feature-Based Reasoning:} Utilize LLMs to perform open-set wireless classification based on statistical signal features, successfully transferring their pre-trained world knowledge to the wireless domain
     
-    \item \textbf{Open-Set Recognition:} By projecting learned embeddings into language model input spaces, we enable zero-shot classification of modulation types through textual descriptions
+    \item \textbf{Open-Set Recognition Capability:} Validate that LLM-based reasoning can handle modulation types beyond traditional closed-set classification
     
-    \item \textbf{Bridging Signal Processing and NLP:} Demonstrates that wireless signal properties can be grounded in natural language, enabling reasoning beyond pattern matching
+    \item \textbf{Knowledge Transfer:} Demonstrate that sophisticated reasoning capabilities need not be trained from scratch but can leverage existing language model world knowledge
     
-    \item \textbf{Foundation Model Pathway:} Establishes the technical feasibility of wireless foundation models analogous to CLIP, where signal encoders and language models are jointly trained
+    \item \textbf{Modular Integration:} Show that the reasoning component can work with features extracted from the rich encoder (DenoMAE) in a modular framework design
 \end{itemize}
 
-This integration represents the dissertation's most novel contribution, opening entirely new research directions at the intersection of wireless communication and natural language processing.
+\textit{Significance:} This proof-of-concept validates the feasibility of integrating LLMs as intelligent reasoning engines for wireless applications, demonstrating that pre-trained world knowledge from language models can be successfully transferred to the wireless signal domain. This represents the most novel aspect of our modular framework.
+
+\subsection{Hybrid Architecture for Condition-Specific Robustness}
+\label{subsec:hybrid_contributions}
+
+\textbf{Contribution 4: DenoMAE + Improved Plug-and-Play Classifier Pipeline for SNR-Robust Classification}
+
+We propose to develop and validate a hybrid architecture pipeline that will ensure robust performance across diverse operating conditions:
+
+\begin{itemize}
+    \item \textbf{Rich Representation Learning:} DenoMAE will extract universal signal representations through hybrid generative-discriminative learning, capturing both global signal structure and local modulation-specific patterns
+    \item \textbf{Discriminative Classification:} An improved plug-and-play classifier will leverage DenoMAE's learned representations for robust automatic modulation classification across varying SNR conditions
+    \item \textbf{Multimodal Processing:} The pipeline will process both time-domain IQ samples and constellation diagrams, with noise treated as an informative modality rather than corruption
+    \item \textbf{SNR Imbalance Resolution:} Address the critical problem of uneven performance across SNR conditions (-10 dB to 30+ dB), ensuring consistent classification accuracy throughout the spectrum
+    \item \textbf{End-to-End Efficiency:} Enable efficient training and deployment without requiring separate specialized models for different operating regimes, reducing system complexity
+\end{itemize}
+
+\textit{Significance:} This will validate that hybrid generative-discriminative representation learning combined with discriminative classification outperforms monolithic models for wireless applications where operating conditions vary dramatically. This architecture is essential for practical foundation model deployment, enabling condition-specific robustness without the overhead of maintaining multiple specialized submodels.
+
+\subsection{Meta-Learning for Rapid Adaptation}
+\label{subsec:meta_contributions}
+
+\textbf{Contribution 5: Meta-Task - Adaptation Module for Foundation Models}
+
+We will employ Meta-Task learning as the adaptation component enabling efficient knowledge transfer:
+\begin{itemize}
+    \item Will enable rapid application of integrated world knowledge to new modulation schemes and channel conditions with 5-10 labeled examples
+    \item Provides task-aware regularization preventing overfitting to meta-training distributions while maintaining adaptability
+    \item Leverages unlabeled data within episodes for improved representation learning, addressing data scarcity
+    \item Will demonstrate few-shot learning capabilities with significantly reduced labeled data requirements
+    \item Will validate that meta-learning can efficiently transfer knowledge across wireless tasks and channel conditions
+\end{itemize}
+
+\textit{Significance:} Will confirm that foundation model frameworks require efficient adaptation mechanisms, and will validate Meta-Task as a practical component for rapid knowledge transfer in wireless applications, enabling cost-effective deployment to new scenarios.
 
 \subsection{Summary of Contributions}
 
-These seven technical contributions, unified by the foundation model perspective, advance wireless AI across multiple dimensions:
+These five core contributions, unified by the modular framework perspective, will advance wireless foundation models across multiple dimensions:
 \begin{itemize}
-    \item \textbf{Theoretical:} Establishes principles for learning universal wireless representations through multimodal self-supervised learning
-    \item \textbf{Methodological:} Develops novel architectures (NMformer, DenoMAE) and meta-learning strategies (BEpiC, MetaRep, Meta-Task) addressing wireless-specific challenges
-    \item \textbf{Practical:} Demonstrates significant performance improvements with reduced data and computational requirements
-    \item \textbf{Visionary:} Charts the pathway toward wireless foundation models through LLM integration and open-set recognition
+    \item \textbf{Component 1 - Rich Encoder:} DenoMAE will approximate world knowledge of signal representations through self-supervised learning, aiming to reduce labeled data requirements by 80\%
+    \item \textbf{Component 2 - Intelligent Reasoning:} Proof-of-concept LLM integration will demonstrate training-free, one-shot classification through world knowledge transfer from pre-trained language models
+    \item \textbf{Component 3 - Hybrid Robustness:} DenoMAE + improved plug-and-play classifier pipeline will ensure consistent performance across SNR conditions through hybrid representation learning and discriminative classification
+    \item \textbf{Component 4 - Rapid Adaptation:} Meta-Task will enable efficient knowledge transfer to new tasks with minimal labeled data (5-10 examples)
+    \item \textbf{Framework Design:} The modular, cost-effective approach will provide a practical pathway toward foundation model capabilities without massive isolated training
 \end{itemize}
 
-The synergy among these contributions—self-supervised pre-training providing universal features, meta-learning enabling rapid adaptation, and language model integration achieving open-set reasoning—realizes a comprehensive framework for next-generation wireless AI.
+The key insight is that wireless foundation models need not be built through massive isolated training. Instead, a strategic, modular framework that intelligently combines self-supervised representation learning, training-free LLM-based reasoning, hybrid generative-discriminative architectures, and meta-learning adaptation can achieve foundation model capabilities economically. Our work will provide both proof-of-concept validation for each component and a conceptual blueprint for next-generation wireless AI systems that are scalable, interpretable, resilient, and highly adaptable across diverse channel conditions.
 
 \section{Structure}
 \label{sec:structure}
@@ -364,7 +399,7 @@ This dissertation is organized to guide readers from foundational concepts throu
 \begin{itemize}
     \item \textbf{Chapter 1: Introduction:} Establishes the vision of wireless foundation models as the organizing principle for this work. Articulates challenges in wireless communication and meta-learning that motivate foundation model approaches. Outlines research questions, technical approach, and contributions with emphasis on the novel integration of self-supervised learning, meta-learning, and language model reasoning for wireless signals.
     
-    \item \textbf{Chapter 2: Self-Supervised Representation Learning for Wireless Signals:} Presents our core contributions to wireless signal representation learning. Begins with comprehensive background on automatic modulation classification, traditional approaches, and deep learning methods. Introduces NMformer (Vision Transformers for constellation diagram classification), DenoMAE (multimodal masked autoencoders with noise as modality), and DenoMAE 2.0 (local patch classification enhancements). Each section provides theoretical motivation, architectural details, and extensive experimental validation demonstrating how these methods learn universal wireless representations. Discusses the transferability of learned encodings to downstream tasks, establishing the foundation for later LLM integration.
+    \item \textbf{Chapter 2: Self-Supervised Representation Learning for Wireless Signals:} Presents our core contributions to wireless signal representation learning. Begins with comprehensive background on automatic modulation classification, traditional approaches, and deep learning methods. Introduces NMformer (Vision Transformers for constellation diagram classification), DenoMAE (multimodal masked autoencoders with noise as modality), and DenoMAE  (local patch classification enhancements). Each section provides theoretical motivation, architectural details, and extensive experimental validation demonstrating how these methods learn universal wireless representations. Discusses the transferability of learned encodings to downstream tasks, establishing the foundation for later LLM integration.
     
     \item \textbf{Chapter 3: Meta-Learning for Rapid Adaptation:} Explores meta-learning contributions enabling few-shot generalization. Provides essential background on meta-learning paradigms, existing architectures (MAML, ProtoNets, etc.), and their limitations. Presents BEpiC (optimized episode generation), MetaRep (episodic representation learning), and Meta-Task (task-aware regularization). Demonstrates how these techniques enable rapid adaptation to new modulation schemes with minimal labeled examples. While validated on standard few-shot benchmarks (miniImageNet, CIFAR-FS), emphasizes implications for wireless scenarios where novel modulation types continually emerge. Connects meta-learning improvements to foundation model requirements for rapid task adaptation.
     

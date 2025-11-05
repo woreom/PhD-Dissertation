@@ -61,25 +61,29 @@
 %=== Include Sub-LaTeX files ===========================
 
 %--- Cover Page ---------------------
-\include{PREFACE/cover}
+\input{PREFACE/cover}
+
 
 %--- Preface ------------------------
-\include{PREFACE/abstract}
-\include{PREFACE/acknowledgement}
+\input{PREFACE/abstract}
 
-\tableofcontents % Add table of contents here
+% --- Table of Contents --------------
+% \clearpage
+\tableofcontents
+
+% \input{PREFACE/acknowledgement}
 
 \pagenumbering{arabic} % Reset page numbering to Arabic and start from 1
 %--- Chapters -----------------------
-\include{BODY/intro}
-\include{BODY/background_1}
-\include{BODY/background_2}
-\include{BODY/background_3}
-\include{BODY/concl}
+\input{BODY/intro}
+\input{BODY/background_1}
+\input{BODY/background_2}
+\input{BODY/background_3}
+\input{BODY/concl}
 
 %--- Appendix -----------------------
-\appendix
-\include{APPENDIX/append1}
+% \appendix
+% \input{APPENDIX/append1}
 
 %--- Bibliography -------------------
 \addcontentsline{toc}{chapter}{\bibname}
