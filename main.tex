@@ -8,7 +8,7 @@
 
 
 %%%%% Basic Setup %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\documentclass[twoside,12pt]{report}
+\documentclass[oneside,12pt]{report}
 \usepackage{SETUP/thesis}
 
 
@@ -16,11 +16,19 @@
 \usepackage{times, epsfig, amssymb, amsmath, rotating, tabularx} % Removed hyperref, tabularray temporarily
 \usepackage{caption, subcaption, multirow, makecell, float} % Removed tabularray temporarily
 \usepackage{booktabs, graphicx, xcolor, pifont, ragged2e}
-\usepackage{algorithm, algpseudocode, enumitem, amsthm, adjustbox}
+\usepackage[ruled,vlined]{algorithm2e} % For Algorithm environment with \For, \KwTo, etc.
+\usepackage{algorithmic} % For algorithmic environment (\REQUIRE, \STATE, etc.)
+\usepackage{placeins} % For \FloatBarrier command
+\usepackage{enumitem, amsthm, adjustbox, lettrine}
 \usepackage[english]{babel}
+\usepackage{acronym}
 \usepackage{tabularray} % Load tabularray separately
 \usepackage{hyperref} % Load hyperref last (often recommended)
+\usepackage{cleveref} % Load cleveref after hyperref for smart cross-references
+\usepackage{todo}
 
+% Define \IEEEPARstart if not available
+\providecommand{\IEEEPARstart}[2]{\noindent\textbf{\large #1}#2}
 
 \definecolor{pythoncomment}{RGB}{76, 153, 0} % Adjust RGB values as desired
 \definecolor{pythonfunction}{RGB}{200, 0, 0} % Red for function names
@@ -66,20 +74,38 @@
 
 %--- Preface ------------------------
 \input{PREFACE/abstract}
-
-% --- Table of Contents --------------
-% \clearpage
-\tableofcontents
-
 % \input{PREFACE/acknowledgement}
 
+% --- Table of Contents --------------
+\clearpage
+\tableofcontents
+
+% --- List of Figures ----------------
+\clearpage
+\listoffigures
+\addcontentsline{toc}{chapter}{List of Figures}
+
+% --- List of Tables -----------------
+\clearpage
+\listoftables
+\addcontentsline{toc}{chapter}{List of Tables}
+
+% --- List of Abbreviations ----------
+\clearpage
+\input{PREFACE/nomenclature}
+
 \pagenumbering{arabic} % Reset page numbering to Arabic and start from 1
+
 %--- Chapters -----------------------
-\input{BODY/intro}
-\input{BODY/background_1}
-\input{BODY/background_2}
-\input{BODY/background_3}
-\input{BODY/concl}
+\input{BODY/intro}                      % Chapter 1: Introduction
+% \input{BODY/background}                 % Chapter 2: Background and Related Work
+% \input{BODY/methodology}                % Chapter 3: Methodology
+\input{BODY/denomae}                    % Chapter 4: DenoMAE
+\input{BODY/cdrf}
+\input{BODY/plugandplay}                % Chapter 5: Plug-and-Play
+\input{BODY/meta-tasks}                 % Chapter 6: Meta-Task
+\input{BODY/results}                    % Chapter 7: Experimental Results
+\input{BODY/concl} % Chapter 8: Discussion, Conclusions, and Future Work (MERGED)
 
 %--- Appendix -----------------------
 % \appendix

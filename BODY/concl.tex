@@ -9,119 +9,50 @@
 \chapter{Conclusions and Future Work}
 \label{chap:concl}
 
-\section{Conclusions}
+\section{Summary of Contributions}
+This dissertation has presented a three-stage framework for developing wireless foundation models, focusing on self-supervised representation learning, large language model (LLM)-based reasoning, and meta-learning for rapid adaptation. Our work makes the following primary contributions:
 
-This dissertation has explored the development of wireless physical foundation models that integrate self-supervised representation learning, meta-learning for rapid adaptation, and large language model reasoning for open-set recognition. The primary goal has been to address critical challenges in building general-purpose AI systems for wireless signals: learning from unlabeled data, adapting quickly with minimal supervision, and generalizing to unseen modulation schemes beyond the training distribution. Our research has produced a three-stage framework demonstrating that wireless signals can exhibit the same foundation model capabilities—pre-training on broad data, rapid task adaptation, and open-ended reasoning—that have transformed natural language processing and computer vision.
+\begin{enumerate}
+    \item \textbf{DenoMAE: Self-Supervised Multimodal Representation Learning (Chapter 4)}
+    We introduced DenoMAE, a novel self-supervised learning framework that learns robust and transferable representations from unlabeled wireless signals. By treating noise as an explicit modality and jointly processing time-domain IQ samples and constellation diagrams, DenoMAE achieves state-of-the-art performance with significantly less labeled data. This work addresses RQ1 and RQ5, demonstrating that multimodal self-supervised learning can produce powerful representations for wireless signals.
 
-\textbf{Stage 1: Self-Supervised Pre-Training for Wireless Signals (Chapter 2)}
+    \item \textbf{Plug-and-Play: LLM-Based White-Box Reasoning Classifier (Chapter 5)}
+    We proposed a novel framework that leverages the reasoning capabilities of large language models for training-free, open-set classification of wireless signals. This approach, which addresses RQ2, translates statistical signal features into natural language prompts, enabling LLMs to perform classification and provide interpretable decisions.
 
-Our first major contribution addresses automatic modulation classification (AMC) through self-supervised representation learning, establishing the foundation for wireless foundation models. \textbf{NMformer} demonstrated that Vision Transformers can effectively process constellation diagrams, achieving high accuracy across diverse noise conditions without explicit denoising. The pre-train-then-fine-tune paradigm showed that models trained on broad datasets rapidly adapt to specific SNR regimes with limited data—exhibiting the generalization and sample efficiency characteristic of foundation models.
+    \item \textbf{Meta-Task: Rapid Adaptation through Meta-Learning (Chapter 6)}
+    To address the challenge of rapid adaptation to new tasks, we introduced the Meta-Task framework, a method-agnostic approach to learnable regularization in few-shot learning. This work, which addresses RQ3, enables models to adapt to new modulation schemes with minimal labeled data, a critical capability for dynamic wireless environments.
+    
+    \item \textbf{Cross-Domain Validation (Chapter 7 \& 8)}
+    Through the analysis of our results, we have shown that the principles of our framework can be extended to cross-domain applications, such as the drone detection paper, which uses vision models for RF signal analysis. This addresses RQ4 and RQ5, demonstrating the potential for cross-modal understanding and knowledge transfer.
+\end{enumerate}
 
-\textbf{DenoMAE}, our primary Stage 1 contribution, introduced a multimodal masked autoencoder framework that treats noise as an explicit modality, pre-training on unlabeled signals across time-domain and constellation representations. This self-supervised approach achieved remarkable data efficiency: requiring 10× less unlabeled pre-training data and 3× less labeled fine-tuning data compared to supervised methods. DenoMAE's learned encodings serve as semantic features for LLM-based open-set recognition (Chapter 5), bridging self-supervised signal representation learning with natural language reasoning. This positions DenoMAE as the core pre-training stage in our wireless foundation model pipeline.
-
-These methodologies collectively demonstrate that transformer architectures and masked autoencoders—the building blocks of foundation models in NLP and vision—can be successfully adapted to wireless physical signals, achieving robustness, data efficiency, and transferability across SNR regimes.
-
-\textbf{Stage 2: Meta-Learning for Rapid Task Adaptation (Chapter 3)}
-
-In the realm of few-shot and meta-learning, we introduced \textbf{BEpiC}, \textbf{MetaRep}, and \textbf{Meta-Task} to enable rapid adaptation with minimal labeled data—the hallmark of foundation models. BEpiC improved cross-domain generalization through binary episode construction, encouraging learning of domain-invariant representations that transfer robustly across different task distributions. For wireless signals, this translates to better generalization across SNR regimes and channel conditions.
-
-MetaRep advanced meta-learning by learning episodic representations through task-conditioned feature modulation, enabling effective few-shot classification by dynamically adapting features based on the support set. This aligns with the foundation model principle of learning general-purpose representations that can be rapidly specialized for specific tasks. Meta-Task introduced method-agnostic learnable regularization, showing that adaptive regularization improves few-shot generalization across diverse meta-learning algorithms—critical for foundation models that must be robust to various deployment scenarios.
-
-Collectively, these contributions demonstrate that meta-learning serves as the critical adaptation layer (Stage 2) in our wireless foundation model framework. Given pre-trained representations from DenoMAE (Stage 1), these techniques enable rapid specialization to new modulation schemes, SNR regimes, or signal environments with minimal labeled data—the sample efficiency required for practical deployment.
-
-\textbf{Practical Training Methodology: Semi-Supervised Learning (Chapter 4)}
-
-We explored maximizing unlabeled data utility via semi-supervised learning through \textbf{RLPL} (Representation Learning with Pseudo-Labeling), our novel framework combining improved representation learning with meta-pseudo-labeling. RLPL demonstrated exceptional performance in extremely label-scarce scenarios (up to 15.74\% accuracy gains with only 250 labels on CIFAR-10), directly addressing the data bottleneck in wireless AI: abundant unlabeled spectrum monitoring signals but scarce expert annotations.
-
-RLPL serves as the practical training methodology enabling Stages 1-2 to operate effectively with minimal labeled data. It allows DenoMAE pre-training to maximize unlabeled signal utilization and enhances meta-learning adaptation by providing high-quality pseudo-labeled samples that augment few-shot episodes. This capability makes the three-stage foundation model framework viable for real-world wireless applications where collecting labeled data at scale is prohibitively expensive.
-
-\textbf{Stage 3: LLM Integration for Open-Set Recognition (Chapter 5)}
-
-\textit{[Note: Chapter 5 represents the culminating contribution of this thesis—integrating DenoMAE-learned encodings with large language models to enable open-set modulation recognition. While the implementation details appear in Chapter 5, the conceptual foundation was established through Stages 1-2: DenoMAE provides semantic wireless signal representations; meta-learning demonstrates rapid adaptation; and LLMs provide the reasoning capability to recognize modulations never seen during training by grounding signal features in natural language descriptions of modulation properties.]}
-
-This novel integration bridges the gap between wireless physical signals and language-based reasoning, enabling zero-shot and few-shot recognition of unseen modulation schemes—moving beyond closed-set classification to truly general-purpose wireless intelligence. By treating DenoMAE encodings as "language" that LLMs can reason about, we demonstrate that foundation model capabilities extend to wireless signals, achieving the open-ended generalization that defines foundation models in other domains.
-
-\textbf{Key Insights and Unified Vision}
-
-Throughout this research, several key insights have emerged that collectively establish wireless foundation models as viable:
-
+\section{Key Findings}
+Our research has yielded several key findings that advance the state of the art in wireless signal analysis:
 \begin{itemize}
-\item \textbf{Transformer architectures} (Vision Transformers) excel at capturing global patterns in wireless signals, particularly when pre-trained on broad data distributions and fine-tuned for specific tasks—directly mirroring the foundation model paradigm in vision.
-
-\item \textbf{Self-supervised masked autoencoding} on multimodal wireless signals (treating noise as a modality) learns transferable representations with minimal labeled data, achieving the sample efficiency required for foundation model pre-training.
-
-\item \textbf{Meta-learning} enables rapid adaptation to new tasks with few examples, demonstrating that pre-trained wireless representations can be quickly specialized—the adaptability characteristic of foundation models.
-
-\item \textbf{Semi-supervised learning} provides the practical training methodology for maximizing unlabeled data utilization, addressing the data scarcity bottleneck in wireless AI and making foundation model development economically viable.
-
-\item \textbf{LLM integration} (Chapter 5) demonstrates that learned wireless signal representations can serve as semantic features for language-based reasoning, enabling open-set recognition and moving beyond fixed classification taxonomies toward general-purpose wireless intelligence.
+    \item \textbf{Answer to RQ1 (Image representations work):} Constellation diagrams are effective visual representations for wireless signals, enabling the use of powerful vision-based models.
+    \item \textbf{Answer to RQ2 (LLMs enable open-set):} Large language models can perform open-set classification of wireless signals, providing a path toward more flexible and intelligent radio systems.
+    \item \textbf{Answer to RQ3 (Meta-learning enables adaptation):} Meta-learning provides an effective mechanism for rapid adaptation to new tasks with minimal labeled data.
+    \item \textbf{Answer to RQ4 (Cross-domain transfer works):} Knowledge can be transferred from the computer vision domain to the wireless domain, as demonstrated by the use of YOLO for RF signal analysis.
+    \item \textbf{Answer to RQ5 (Bidirectional understanding exists):} There is evidence of bidirectional understanding between the signal and image domains, where signal models can understand images and vice versa.
 \end{itemize}
 
-The central contribution of this dissertation is demonstrating that wireless physical signals can be treated analogously to language or vision in foundation models: pre-train on unlabeled signals via masked autoencoders (Stage 1), rapidly adapt to new tasks via meta-learning (Stage 2), and enable open-ended reasoning through LLM integration (Stage 3). This three-stage framework establishes a pathway from traditional supervised AMC toward truly general-purpose wireless foundation models capable of recognizing, reasoning about, and adapting to novel signal environments.
-
-\section{Future Work}
-
-Building upon the contributions of this thesis, several promising research directions could further advance wireless foundation models toward truly general-purpose wireless intelligence. The following avenues represent significant opportunities for extending our three-stage framework:
-
-\noindent \textbf{Advancing Stage 1: Pre-Training at Scale}
-
+\section{Limitations}
+Despite the promising results, this work has several limitations that should be addressed in future research:
 \begin{itemize}
-    \item \textbf{Large-Scale Pre-Training Datasets:} Develop comprehensive wireless signal datasets spanning diverse modulation families, protocol standards (LTE, 5G, WiFi, satellite), and environmental conditions. Foundation models in NLP and vision benefited from web-scale pre-training (GPT-3: 300B tokens, CLIP: 400M image-text pairs); wireless foundation models similarly require orders-of-magnitude larger and more diverse pre-training corpora to achieve comparable generalization.
-    
-    \item \textbf{Advanced Signal Representations:} Extend DenoMAE to incorporate time-frequency representations beyond constellation diagrams—wavelet scalograms, cyclostationary feature maps, spectrograms—enabling multimodal pre-training across complementary signal views analogous to CLIP's vision-language training.
-    
-    \item \textbf{Real-World Validation:} Transition from synthetic datasets to real-world signals acquired from operational networks, software-defined radios, and multi-antenna systems. This addresses practical challenges including hardware impairments, non-Gaussian noise distributions, realistic interference patterns, and dynamic propagation environments—critical for operational deployment of wireless foundation models.
-    
-    \item \textbf{Scaling Laws for Wireless Signals:} Empirically characterize scaling laws relating model size, dataset size, and compute to performance on wireless tasks, analogous to Kaplan et al.'s analysis for language models. Understanding these relationships would guide efficient allocation of resources in developing larger wireless foundation models.
+    \item \textbf{Limited to 10-class datasets:} Our experiments were conducted on datasets with a limited number of modulation classes.
+    \item \textbf{Computational considerations:} The training of large models and the use of LLMs require significant computational resources.
+    \item \textbf{Real-world deployment challenges:} There is a gap between the performance of our models in a controlled lab environment and their potential performance in real-world scenarios with complex channel effects and hardware impairments.
 \end{itemize}
 
-\noindent \textbf{Enhancing Stage 2: Meta-Learning and Adaptation}
-
+\section{Future Research Directions}
+This thesis opens up several exciting avenues for future work, including:
 \begin{itemize}
-    
-    \item \textbf{Transformer-Based Meta-Learning:} Integrate Meta-Task framework with Vision Transformers using specialized masked pre-training objectives tailored for signal processing. This hybrid approach could leverage global context capabilities while maintaining adaptation benefits, potentially enabling in-context learning where models adapt to new modulation schemes within the forward pass (analogous to GPT-3 few-shot prompting).
-    
-    \item \textbf{Continual Learning for Dynamic Spectrums:} Develop continual meta-learning approaches that enable wireless foundation models to incrementally learn new modulation schemes without catastrophic forgetting, addressing the dynamic nature of wireless protocols where new standards emerge continuously.
-    
-    \item \textbf{Few-Shot Model Compression:} Explore techniques to distill knowledge from complex meta-learned representations into compact models suitable for edge deployment, maintaining rapid adaptation capabilities while reducing computational requirements for resource-constrained IoT devices.
+    \item \textbf{DenoMAE 2.0 Extensions:} Future work could explore hybrid generative-discriminative extensions of DenoMAE to further improve performance and robustness.
+    \item \textbf{DISC-AMC Integration:} The integration of discretized statistics for more efficient LLM reasoning could lead to more parameter-efficient and token-efficient architectures.
+    \item \textbf{Combining DenoMAE 2.0 + DISC-AMC:} The synergy between advanced representations from DenoMAE 2.0 and efficient reasoning from DISC-AMC could lead to even more powerful wireless foundation models.
+    \item \textbf{Scaling to More Modulation Types:} A natural next step is to scale the pre-training to include a much wider variety of modulation schemes.
+    \item \textbf{Real-Time Implementation:} Future work should focus on the real-time implementation of these models on resource-constrained hardware.
 \end{itemize}
 
-\noindent \textbf{Extending Stage 3: LLM Integration and Open-Set Recognition}
-
-\begin{itemize}
-
-    \item \textbf{Multimodal Language Grounding:} Develop richer language descriptions of wireless signal properties—symbol geometry, spectral characteristics, temporal patterns—enabling more nuanced LLM reasoning. This could involve automatically generating textual explanations of modulation features from DenoMAE encodings, creating a bidirectional bridge between signals and language.
-    
-    \item \textbf{Zero-Shot Protocol Understanding:} Extend LLM integration beyond modulation classification to protocol decoding, spectrum policy reasoning, and interference diagnosis. By grounding wireless domain knowledge in language models, foundation models could reason about entirely new communication protocols from textual specifications alone—true zero-shot generalization.
-    
-    \item \textbf{Interactive Spectrum Intelligence:} Build conversational AI systems where users can query wireless foundation models in natural language ("Identify unusual signals in the 2.4 GHz band," "Explain why this link fails at low SNR"), enabling intuitive human-AI collaboration for spectrum monitoring and network troubleshooting.
-\end{itemize}
-
-\noindent \textbf{Cross-Cutting Directions: Toward General Wireless Intelligence}
-
-\begin{itemize}
-    \item \textbf{Unified Wireless-Vision-Language Models:} Develop joint foundation models that simultaneously process wireless signals, visual data (e.g., environment sensing), and natural language, enabling multimodal reasoning for applications like autonomous vehicles (fusing radar, camera, communication signals) or smart cities (integrated sensing-communication systems).
-    
-    \item \textbf{Foundation Models for Physical Layer Security:} Apply the three-stage framework to adversarial signal environments—pre-train on benign/adversarial signal distributions, rapidly adapt to detect novel spoofing or jamming attacks via meta-learning, use LLM reasoning to explain attack signatures and recommend countermeasures.
-    
-    \item \textbf{Federated Learning for Wireless Foundation Models:} Develop privacy-preserving distributed training methods enabling collaborative pre-training across organizations (telecom operators, defense agencies, research institutions) without sharing raw signal data, accelerating development of large-scale wireless foundation models while respecting data sovereignty.
-    
-    \item \textbf{Benchmarking Open-Set Wireless Intelligence:} Establish standardized evaluation protocols for wireless foundation models analogous to GLUE/SuperGLUE (NLP) or ImageNet (vision), including tasks spanning modulation recognition, protocol decoding, interference classification, spectrum forecasting, and cross-domain transfer—enabling rigorous comparison of foundation model capabilities.
-\end{itemize}
-
-\textbf{Broader Impact and Vision}
-
-The research directions outlined above collectively point toward a future where wireless foundation models achieve the same transformative impact in spectrum management and wireless communication that language models (GPT, BERT) and vision models (CLIP, SAM) have achieved in their respective domains. Such models would:
-
-\begin{itemize}
-\item \textbf{Democratize wireless AI} by reducing the expertise and labeled data required to develop signal processing systems, enabling smaller organizations and researchers to build state-of-the-art wireless applications.
-
-\item \textbf{Enable cognitive radios and dynamic spectrum access} that reason about novel signals and protocols on-the-fly, adapting to congested or adversarial spectrum environments without pre-programmed rules.
-
-\item \textbf{Accelerate 6G research} by providing foundation models that quickly adapt to experimental waveforms, beamforming strategies, and modulation schemes, reducing the time from concept to deployment.
-
-\item \textbf{Support spectrum policy and regulation} through AI systems that understand wireless signals in human terms, facilitating dialogue between engineers, policymakers, and the public about spectrum allocation and interference management.
-\end{itemize}
-
-This dissertation has laid the groundwork for this vision by demonstrating that wireless physical signals can be treated as a modality amenable to foundation model development. The three-stage framework—self-supervised pre-training, meta-learning adaptation, and LLM-based reasoning—provides a principled pathway from traditional signal processing toward general-purpose wireless intelligence. Future work must scale this approach to match the ambition that has driven foundation model development in language and vision, ultimately realizing truly universal models capable of understanding and reasoning about any wireless signal in any environment.
-
+\section{Closing Remarks}
+This dissertation has laid the groundwork for a new generation of wireless AI systems based on the principles of foundation models. By integrating self-supervised learning, LLM-based reasoning, and meta-learning, we have demonstrated a path toward building general-purpose, adaptable, and interpretable models for the wireless domain. The vision is to move beyond specialized, black-box classifiers and toward a future of truly cognitive radios that can understand, reason about, and adapt to the complexities of the wireless world.
