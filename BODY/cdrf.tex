@@ -30,9 +30,9 @@ Collectively, CDRF aims to shift the field from narrow, clean benchmarks toward 
     % \item \todo{open-set and multi-class?}
 \end{itemize}
 
-Within the broader dissertation framework, CDRF serves as a critical validation domain demonstrating cross-modal knowledge transfer. By converting RF signals to spectrogram images, this work validates that vision models (YOLO, ResNet) can transfer learned representations to wireless perception tasks—a key principle underlying the multimodal approach in DenoMAE (Chapter~\ref{chap:denomae}). This empirical validation provides the foundation for the dissertation's modular, cost-effective approach: rather than training wireless foundation models from scratch, we can strategically leverage pre-trained vision architectures (proven here), integrate LLM reasoning (Chapter~\ref{chap:plugandplay}), and enable rapid adaptation via meta-learning (Chapter~\ref{chap:metatask}). CDRF provides the realistic, stress-tested benchmark needed to evaluate whether these foundation model components generalize beyond clean laboratory conditions to operational deployment scenarios.
+Within the broader dissertation framework, CDRF serves as a critical validation domain demonstrating cross-modal knowledge transfer. By converting RF signals to spectrogram images, this work validates that vision models (YOLO, ResNet) can transfer learned representations to wireless perception tasks—a key principle underlying the multimodal approach in DenoMAE (Chapter~\ref{chap:denomae}). This empirical validation provides the foundation for the dissertation's modular, cost-effective approach: rather than training wireless foundation models from scratch, we can strategically leverage pre-trained vision architectures (proven here), integrate LLM reasoning (Chapter~\ref{chap:plugandplay}), and enable rapid adaptation via meta-learning (Chapter~\ref{chap:meta_task}). CDRF provides the realistic, stress-tested benchmark needed to evaluate whether these foundation model components generalize beyond clean laboratory conditions to operational deployment scenarios.
 
-The remainder of this paper is organized as follows. Section~\ref{sec:related_work} reviews related work in RF-based drone detection, covering various sensing modalities and existing public datasets. Section~\ref{sec:dataset} details the design and collection of the CDRF dataset, and Section~\ref{sec:data_processing} describes our data preprocessing, augmentation, and annotation pipeline. Section~\ref{sec:ml_tasks} presents the experimental setup and benchmark results for several machine learning tasks, including drone detection, single-label, open-set, and hierarchical classification. Finally, Section~\ref{sec:conclusion} concludes the paper and discusses future research directions.
+The remainder of this paper is organized as follows. Section~\ref{sec:related_work} reviews related work in RF-based drone detection, covering various sensing modalities and existing public datasets. Section~\ref{sec:dataset} details the design and collection of the CDRF dataset, and Section~\ref{sec:data_processing} describes our data preprocessing, augmentation, and annotation pipeline. Section~\ref{sec:ml_tasks} presents the experimental setup and benchmark results for several machine learning tasks, including drone detection, single-label, open-set, and hierarchical classification. Finally, Section~\ref{sec:crdf_conclusion} concludes the paper and discusses future research directions.
 
 \section{Related Work}
 \label{sec:related_work}
@@ -208,15 +208,14 @@ These are selectable in the augmentation scripts and can be toggled per experime
 
 \begin{figure*}[htbp]
     \centering
-    \begin{subfigure}[h]{0.48\textwidth}
+    \begin{subfigure}[h]{0.6\columnwidth}
         \centering
-        \includegraphics[width=\linewidth]{FIGURES/cdrf/val_batch1_labels.jpg}
+        \includegraphics[width=\columnwidth]{FIGURES/cdrf/val_batch1_labels.jpg}
         \caption{Annotated Data.}
     \end{subfigure}
-    \hfill
-    \begin{subfigure}[h]{0.48\textwidth}
+    \begin{subfigure}[h]{0.6\columnwidth}
         \centering
-        \includegraphics[width=\linewidth]{FIGURES/cdrf/val_batch3_labels.jpg}
+        \includegraphics[width=\columnwidth]{FIGURES/cdrf/val_batch3_labels.jpg}
         \caption{Augmented Data.}
     \end{subfigure}
     \caption{Examples of annotated and augmented data.}
@@ -298,7 +297,7 @@ We report standard detection metrics: class-aggregated Precision and Recall; mea
 \centering
 \caption{YOLO detection results.}
 \label{tab:yolo_detection_results}
-\resizebox{\textwidth}{!}{%
+\resizebox{0.8\linewidth}{!}{%
 \begin{tabular}{lcccccc}
 \toprule
 Run & Epochs & Precision & Recall & mAP@0.5 & mAP@[.5:.95] \\
@@ -359,7 +358,7 @@ In contrast, training on a combined set of indoor and outdoor data yields substa
 
 \begin{figure}[phtb] 
     \centering
-    \includegraphics[width=1\linewidth]{FIGURES/cdrf/hier_plot.png}
+    \includegraphics[width=0.7\linewidth]{FIGURES/cdrf/hier_plot.png}
     \caption{Hierarchical classification accuracy on different training setups.}
     \label{fig:hier_plot}
 \end{figure}
@@ -379,17 +378,23 @@ We evaluated MetaMax on our curated CDRF subset, achieving an overall accuracy o
 
 \begin{figure}[!ht]
     \centering
-    \includegraphics[width=\columnwidth]{FIGURES/cdrf/osr1.png}
-    \caption{Binary confusion matrix for known vs unknown class discrimination.}
-    \label{fig:osr_detailed_confusion}
+    \begin{subfigure}[h]{0.48\columnwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{FIGURES/cdrf/osr1.png}
+        \caption{Binary confusion matrix for known vs unknown class discrimination.}
+        \label{fig:osr_binary_confusion}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[h]{0.48\columnwidth}
+        \centering
+        \includegraphics[width=\columnwidth]{FIGURES/cdrf/osr2.png}
+        \caption{Detailed confusion matrix showing per-class performance for open-set recognition.}
+        \label{fig:osr_detailed_confusion}
+    \end{subfigure}
+    \caption{Open-set recognition confusion matrices: (a) known vs unknown discrimination; (b) per-class detailed performance.}
+    \label{fig:osr_confusions}
 \end{figure}
  
-\begin{figure}[!ht]
-    \centering
-    \includegraphics[width=\columnwidth]{FIGURES/cdrf/osr2.png}
-    \caption{Detailed confusion matrix showing per-class performance for open-set recognition.}
-    \label{fig:osr_binary_confusion}
-\end{figure}
 
 \subsection{Drone Classification (Single-Label)}
 \subsubsection{Task Definition}
@@ -433,7 +438,7 @@ After training, the model achieved a test accuracy of 53.49\%, as shown in the c
 
 \textbf{Robustness Gap and Foundation Model Implications:} The performance degradation under augmented conditions reveals critical challenges for foundation models. The recall drop from 0.982 to 0.855 (YOLOv11n) reflects the precision-recall tradeoff when training on low-SNR, high-interference conditions—the detector becomes more conservative to avoid false positives but misses more true detections. This robustness gap motivates the dissertation's modular framework: self-supervised pretraining (DenoMAE) on diverse unlabeled signals should learn noise-invariant representations; LLM-based reasoning (Plug-and-Play) should provide complementary decision-making that doesn't degrade under noise; and meta-learning (Meta-Task) should enable rapid adaptation to deployment-specific SNR distributions with minimal labeled data. The hierarchical classification results (indoor-only: 42.07\% model accuracy; mixed training: 69.63\%, +27.56\%) demonstrate that domain shift—a core challenge for foundation models—can be addressed through diverse pretraining data, validating the framework's emphasis on broad data coverage.
 
-\textbf{Open-Set Recognition and Real-World Deployment:} The 73.96\% unknown detection rate establishes that models can learn to reject novel threats, but the class-size correlation in performance (Fig.~\ref{fig:osr_detailed_confusion}) highlights a persistent challenge: data imbalance. This finding connects directly to Meta-Task (Chapter~\ref{chap:metatask}), which addresses few-shot learning scenarios where new drone types emerge with only 5-10 labeled examples. The open-set capability validated here provides a safety mechanism for foundation model deployment—rather than forcing every input into a known category, models can flag uncertainty and request human verification.
+\textbf{Open-Set Recognition and Real-World Deployment:} The 73.96\% unknown detection rate establishes that models can learn to reject novel threats, but the class-size correlation in performance (Fig.~\ref{fig:osr_detailed_confusion}) highlights a persistent challenge: data imbalance. This finding connects directly to Meta-Task (Chapter~\ref{chap:meta_task}), which addresses few-shot learning scenarios where new drone types emerge with only 5-10 labeled examples. The open-set capability validated here provides a safety mechanism for foundation model deployment—rather than forcing every input into a known category, models can flag uncertainty and request human verification.
 
 To ensure the long-term relevance and utility of CDRF, we are committed to its continuous expansion. Future work will focus on several key areas:
 % \todo[inline,color=blue!40]{To Everyone: Do we want to make this commitment?}
@@ -445,7 +450,7 @@ To ensure the long-term relevance and utility of CDRF, we are committed to its c
 \end{itemize}
 
 \section{Conclusion}
-\label{sec:conclusion}
+\label{sec:crdf_conclusion}
 
 This chapter presented CDRF, a comprehensive benchmark that validates a fundamental premise of the dissertation's framework: vision models can successfully transfer to wireless perception tasks. By demonstrating that YOLO detection (mAP@0.5 = 0.986 clean, 0.935 augmented) and ResNet classification operate effectively on RF spectrograms, CDRF provides empirical evidence for the cross-modal transfer principle underlying Research Question 1 (RQ1). This validation justifies the multimodal approach pursued in DenoMAE (Chapter~\ref{chap:denomae}), where masked autoencoders learn universal wireless representations by treating signals as images.
 

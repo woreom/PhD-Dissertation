@@ -206,7 +206,7 @@ First, incorporating exemplar context into the prompt ($I+C+S$) substantially im
 
 Second, the effect of model size is evident. The DeepSeek-R1-Distill-Qwen-32B model, which has significantly more parameters than the 7B variant, achieves a cleaned accuracy of 61.44\% (noiseless) and 53.52\% (noisy) with the $I+C+S$ prompt, an improvement of over 40\% relative to its $I+S$ configuration. This indicates that larger models, with their enhanced representational capacity, can better exploit the rich contextual information provided by exemplar summaries.
 
-Figure~\ref{fig:confusion_deepseek32B} presents the confusion matrix top 5 classes for this model under noisy conditions using the $I+C+S$ prompt. While the model performs well for certain classes like 16PAM, significant confusion exists between spectrally similar modulations, notably 4ASK and 4PAM, which are frequently misclassified as each other. Other notable misclassifications include CPFSK being predicted as OOK or failing classification, and 8ASK being mistaken for 16PAM.
+% Figure~\ref{fig:confusion_deepseek32B} presents the confusion matrix top 5 classes for this model under noisy conditions using the $I+C+S$ prompt. While the model performs well for certain classes like 16PAM, significant confusion exists between spectrally similar modulations, notably 4ASK and 4PAM, which are frequently misclassified as each other. Other notable misclassifications include CPFSK being predicted as OOK or failing classification, and 8ASK being mistaken for 16PAM.
 
 {{The proprietary o3‑mini model (200 B parameters) achieves the highest accuracy (69.92\% overall, 72.4\% cleaned under noise), confirming scalability benefits. Its scale, however, raises memory and latency challenges for edge or real‑time deployments, motivating future work on distillation and quantization.}}
 
@@ -214,7 +214,7 @@ Figure~\ref{fig:confusion_deepseek32B} presents the confusion matrix top 5 class
 
 % \begin{figure}[htbp]
 %   \centering
-%   \includegraphics[width=0.9\linewidth]{confusion.png}
+%   \includegraphics[width=0.9\linewidth]{FIGURES/pnp/confusion.png}
 %   \caption{{Confusion matrix for DeepSeek‑R1‑Distill‑Qwen‑32B using the I+C+S prompt on noisy signals.}}
 %   \label{fig:confusion_deepseek32B}
 % \end{figure}

@@ -81,7 +81,7 @@ For a comprehensive review of meta-learning, few-shot learning, and regularizati
 
 Existing regularization approaches include Explicit Regularization (ER), Episode Augmentation Regularization (EAR), Task Augmentation Regularization (TAR), and Adversarial Task Upsampling (ATU)~\cite{imaml,mrmaml,yamaguchi2023regularizing,yao2021meta,wu2022adversarial}. While effective, these methods often require extensive pre-training, synthetic data generation, or task-specific modifications.
 
-Meta-Task distinguishes itself by introducing a learnable, task-specific regularization strategy through a parameterized neural layer $\phi$ that dynamically adapts without modifying the underlying FSL architecture. Unlike iMAML and MR-MAML (which focus on meta-initialization and gradient regularization) or ProtoDiff (which requires computationally intensive diffusion models), Meta-Task learns robust embeddings during meta-training through auxiliary tasks, making it method-agnostic, computationally efficient, and suitable for resource-constrained environments.
+Meta-Task distinguishes itself by introducing a learnable, task-specific regularization strategy through a parameterized neural layer $\phi$ that dynamically adapts without modifying the underlying FSL architecture. Unlike iMAML~\cite{imaml} and MR-MAML~\cite{mrmaml} (which focus on meta-initialization and gradient regularization) or ProtoDiff~\cite{du2023protodiff} (which requires computationally intensive diffusion models), Meta-Task learns robust embeddings during meta-training through auxiliary tasks, making it method-agnostic, computationally efficient, and suitable for resource-constrained environments.
 
 
 \begin{table}[ht]
@@ -92,16 +92,16 @@ Meta-Task distinguishes itself by introducing a learnable, task-specific regular
 \toprule
 \textbf{Method} & \textbf{Category} & \textbf{Method-Agnostic} & \textbf{Complexity} \\
 \midrule
-\textbf{iMAML} \cite{imaml} & ER & No & Medium
+{iMAML} \cite{imaml} & ER & No & Medium
 \\
-\textbf{MR-MAML} \cite{mrmaml} & ER & No & Medium \\ 
-\textbf{Minimax-Meta} \cite{wang2023improving} & ER & No & Low \\
-\textbf{DAC-MR} \cite{shu2023dac} & EAR & Yes & Medium \\
-\textbf{MetaMix} \cite{chen2021metamix} & EAR & Yes & Medium \\
+{MR-MAML} \cite{mrmaml} & ER & No & Medium \\ 
+{Minimax-Meta} \cite{wang2023improving} & ER & No & Low \\
+{DAC-MR} \cite{shu2023dac} & EAR & Yes & Medium \\
+{MetaMix} \cite{chen2021metamix} & EAR & Yes & Medium \\
 % \textbf{Channel Shuffle} \cite{yao2021improving} & TAR & Yes & Low \\
-\textbf{ProtoDiff} \cite{du2023protodiff} & TAR & No & High \\
-\textbf{ATU} \cite{wu2022adversarial} & TAR & Yes & High \\
-\textbf{LEO} \cite{leo} & ER & No & High \\
+{ProtoDiff} \cite{du2023protodiff} & TAR & No & High \\
+{ATU} \cite{wu2022adversarial} & TAR & Yes & High \\
+{LEO} \cite{leo} & ER & No & High \\
 \textbf{Task-Decoder (Ours)} & \textbf{MTR} & \textbf{Yes} & \textbf{Medium} \\
 \bottomrule\\
 \end{tabular}
@@ -263,7 +263,7 @@ A rigorous mathematical proof is more challenging for FSL methods beyond MAML. H
 
 \section{Experiments and Results}\label{sec:results}
 
-We validate Meta-Task on standard computer vision benchmarks to demonstrate its general applicability and enable comparison with existing FSL methods. This validation establishes the framework's effectiveness before wireless-specific deployment, which is discussed as future work in Chapter~\ref{chap:discussion}. The principles demonstrated here—rapid adaptation with minimal data—transfer directly to wireless applications where acquiring labeled signals is expensive.
+We validate Meta-Task on standard computer vision benchmarks to demonstrate its general applicability and enable comparison with existing FSL methods. This validation establishes the framework's effectiveness before wireless-specific deployment, which is discussed as future work in Chapter~\ref{chap:concl}. The principles demonstrated here—rapid adaptation with minimal data—transfer directly to wireless applications where acquiring labeled signals is expensive.
 
 In this section, we conduct comprehensive experiments to validate the effectiveness of our proposed {Meta-Task} framework in enhancing generalization and mitigating overfitting in few-shot learning. Our objectives are to: 
 \begin{enumerate} 
@@ -415,7 +415,7 @@ Figure~\ref{fig:5} illustrates that our method achieves higher accuracy more qui
 To address concerns regarding implementation specifics, we provide detailed information about the hyperparameters, training times, and autoencoder architectures in Section~\ref{sec:exp_details}. We also conducted ablation studies to analyze the effect of different autoencoder architectures and the use of multiple autoencoders per task. The results indicate that while deeper autoencoders can provide marginal performance gains, the computational overhead increases significantly. Therefore, a single, appropriately sized autoencoder strikes a good balance between performance and efficiency.
 
 
-\section{Conclusion}\label{sec:conclusion}
+\section{Conclusion}\label{sec:meta_tasks_conclusion}
 
 
 In this paper, we introduced Meta-Task, a method-agnostic framework that treats regularization as a learnable task for few-shot learning. By integrating an autoencoder-based Task-Decoder directly within the meta-learning optimization, our approach provides continuous, unsupervised regularization that prevents overfitting and improves generalization. Extensive experiments across multiple datasets (Mini-ImageNet, Tiered-ImageNet, FC100) and meta-learning methods (Prototypical Networks, MAML, MetaOptNet, P$>$M$>$F) demonstrate consistent improvements in accuracy, convergence speed, and cross-domain generalization.

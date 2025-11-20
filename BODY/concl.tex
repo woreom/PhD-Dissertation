@@ -45,13 +45,72 @@ Despite the promising results, this work has several limitations that should be 
 \end{itemize}
 
 \section{Future Research Directions}
-This thesis opens up several exciting avenues for future work, including:
+The foundation established in this dissertation opens several promising avenues for advancing wireless foundation models. We highlight three particularly impactful directions that build directly on our contributions:
+
+\subsection{DenoMAE 2.0: Hybrid Generative-Discriminative Learning}
+
+DenoMAE 2.0 will address a fundamental limitation of the original framework: the lack of spatial awareness during masked reconstruction. The enhanced architecture will introduce a dual-objective paradigm that will combine traditional reconstruction with position-based patch classification, enabling simultaneous learning of global signal structure and fine-grained local patterns.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{FIGURES/denomae2/flow_con.png}
+    \caption{DenoMAE 2.0 architecture overview: The framework will extend masked autoencoding with a classification head that will treat each visible patch as a distinct class based on spatial position. This dual-objective approach will balance reconstruction loss for global feature learning with position-aware classification for capturing local signal patterns, and will yield more robust and transferable representations.}
+    \label{fig:denomae2_arch}
+\end{figure}
+
+The core innovation will treat each visible (unmasked) patch as a distinct class determined by its spatial position, creating a position-aware learning objective. The combined loss function $\mathcal{L} = \lambda_{\text{rec}} \mathcal{L}_{\text{rec}} + \lambda_{\text{cls}} \mathcal{L}_{\text{cls}}$ will balance reconstruction quality with spatial discrimination. This design will encourage the encoder to develop representations that are simultaneously reconstructive (preserving signal structure) and discriminative (capturing position-specific patterns), and will lead to improved generalization across SNR conditions and enhanced transfer learning to out-of-distribution datasets.
+
+Key research directions will include: (1) investigating optimal loss weighting strategies across varying SNR regimes; (2) extending to hierarchical position classification that will capture multi-scale spatial relationships; (3) integrating with Meta-Task's few-shot adaptation mechanisms; and (4) evaluating whether position-aware pretraining will transfer beyond modulation classification to channel estimation, interference detection, and spectrum sensing tasks.
+
+\subsection{DiSC-AMC: Token- and Parameter-Efficient LLM Reasoning}
+
+While Plug-and-Play (Chapter~\ref{chap:plugandplay}) has demonstrated the feasibility of LLM-based wireless classification, practical deployment will face two critical challenges: verbose floating-point feature representations that will consume excessive context windows, and large model requirements that will strain computational budgets. DiSC-AMC~\cite{disc_amc} will address these limitations through a three-stage pipeline designed for resource-constrained deployments.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.9\textwidth]{FIGURES/disc/method.png}
+\caption{Planned DiSC-AMC framework. (1) Signal statistics such as cumulants (c1, c2, c3, ...) will be computed and discretized into bins, represented as different shapes. (2) Exemplars will be pruned using a lightweight top-$k$ shortlisting classifier. (3) The prompt will be structured for efficient, constrained decoding by the LLM.}
+\label{fig:pipeline}
+\end{figure*}
+
+\textbf{Stage 1---Statistical Discretization:} Continuous cumulants and spectral features will be mapped into symbolic bins rather than lengthy decimal strings. This discretization strategy will focus LLMs on qualitative statistical patterns rather than noisy numerical precision, aligning wireless signal representation with how foundation models process natural language tokens. The approach will reduce feature verbosity while preserving discriminative information.
+
+\textbf{Stage 2---Dynamic Exemplar Pruning:} A lightweight vision classifier will analyze constellation diagrams to identify the top-$k$ most probable modulation classes, dramatically reducing the context window by including only relevant exemplars. This prefiltering step will be modular and swappable—implementations may use deterministic rules, alternative vision models, or training-free heuristics depending on deployment constraints.
+
+\textbf{Stage 3---Constrained Prompting:} Queries will be reformulated from open-ended classification to a structured multiple-choice format, enforcing label-only predictions and enabling efficient decoding. Combined with selective feature inclusion based on information value, this will yield prompts that are simultaneously compact and interpretable.
+
+The framework will demonstrate that training-free LLM-based classification can operate at practical computational scales with order-of-magnitude reductions in both model size and context length. Future research will include: (1) applying discretization strategies to other statistical wireless features (channel state information, beamforming coefficients); (2) investigating hybrid architectures where learned representations from DenoMAE 2.0 will replace hand-crafted statistical features; (3) extending to multi-task scenarios (joint modulation classification, SNR estimation, and interference detection); and (4) developing adaptive binning strategies that will adjust discretization granularity based on signal conditions.
+
+\subsection{Synergistic Integration: Toward Practical Wireless Foundation Models}
+
+The most promising future direction lies in the principled integration of DenoMAE 2.0 and DiSC-AMC within the dissertation's modular framework. DenoMAE 2.0 provides robust, noise-invariant representations through self-supervised learning; DiSC-AMC enables efficient, interpretable reasoning through token-optimized LLM prompting; and Meta-Task (Chapter~\ref{chap:meta_task}) facilitates rapid adaptation to novel deployment scenarios. Together, these components address complementary aspects of the wireless foundation model challenge:
+
 \begin{itemize}
-    \item \textbf{DenoMAE 2.0 Extensions:} Future work could explore hybrid generative-discriminative extensions of DenoMAE to further improve performance and robustness.
-    \item \textbf{DISC-AMC Integration:} The integration of discretized statistics for more efficient LLM reasoning could lead to more parameter-efficient and token-efficient architectures.
-    \item \textbf{Combining DenoMAE 2.0 + DISC-AMC:} The synergy between advanced representations from DenoMAE 2.0 and efficient reasoning from DISC-AMC could lead to even more powerful wireless foundation models.
-    \item \textbf{Scaling to More Modulation Types:} A natural next step is to scale the pre-training to include a much wider variety of modulation schemes.
-    \item \textbf{Real-Time Implementation:} Future work should focus on the real-time implementation of these models on resource-constrained hardware.
+    \item \textbf{Representation Learning:} DenoMAE 2.0's dual-objective training produces features that are simultaneously reconstructive (preserving signal structure) and discriminative (capturing class-specific patterns), ideal for both unsupervised pretraining and supervised fine-tuning.
+    
+    \item \textbf{Efficient Reasoning:} DiSC-AMC's symbolic discretization and dynamic pruning reduce LLM deployment costs by an order of magnitude, making foundation model inference practical for edge devices and spectrum monitoring systems.
+    
+    \item \textbf{Rapid Adaptation:} Meta-Task's learnable regularization enables few-shot specialization to new modulation schemes or channel conditions with 5--10 labeled examples, avoiding costly retraining.
+    
+    \item \textbf{Interpretability:} The natural language interface provided by DiSC-AMC complements DenoMAE 2.0's visual reconstructions, offering operators both symbolic explanations and signal-level diagnostics.
+\end{itemize}
+
+A concrete integration pathway would: (1) pretrain DenoMAE 2.0 on diverse unlabeled wireless data to learn universal representations; (2) fine-tune the encoder with Meta-Task for few-shot adaptation to deployment-specific classes; (3) extract statistical features from DenoMAE 2.0's reconstructed (denoised) signals; (4) apply DiSC-AMC's discretization and pruning pipeline to these features; (5) use constrained LLM prompting for final classification with interpretable rationales. This end-to-end system would achieve the dissertation's vision: a cost-effective, modular wireless foundation model that approximates world knowledge through strategic component integration rather than massive monolithic training.
+
+\subsection{Additional Promising Directions}
+
+Beyond these primary extensions, several secondary avenues warrant exploration:
+
+\begin{itemize}
+    \item \textbf{Scaling to Broader Modulation Taxonomies:} Extending pretraining to 50+ modulation schemes, including emerging waveforms (OTFS, NOMA) and legacy standards (analog FM/AM), to build truly general-purpose encoders.
+    
+    \item \textbf{Multi-Task Foundation Models:} Training unified architectures that perform modulation classification, SNR estimation, channel equalization, and interference detection simultaneously, leveraging shared representations across tasks.
+    
+    \item \textbf{Real-Time Edge Deployment:} Optimizing the integrated framework for FPGA and embedded GPU platforms, including quantization-aware training, pruning, and knowledge distillation to meet latency constraints (<10 ms inference) for cognitive radio applications.
+    
+    \item \textbf{Adversarial Robustness:} Investigating whether DenoMAE 2.0's position-aware learning and DiSC-AMC's symbolic abstractions provide inherent robustness to adversarial perturbations and spoofing attacks in contested electromagnetic environments.
+    
+    \item \textbf{Cross-Domain Transfer:} Evaluating whether representations learned from communications signals (as in this dissertation) transfer to radar, satellite, or biomedical RF applications, demonstrating true foundation model generality.
 \end{itemize}
 
 \section{Closing Remarks}
