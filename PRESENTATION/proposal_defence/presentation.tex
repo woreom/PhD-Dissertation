@@ -1,0 +1,65 @@
+\documentclass[aspectratio=169]{beamer}
+
+% Theme and Color
+\usetheme{Madrid}
+\usecolortheme{beaver}
+
+% Packages
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tikz}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% Title Info
+\title[Wireless Foundation Models]{A Modular and Cost-Effective Framework for Wireless Foundation Models Through World Knowledge Integration}
+\author{Mohammad Rostami}
+\institute[Rowan University]{Rowan University}
+\date{\today}
+
+% Custom Commands
+\newcommand{\highlight}[1]{\textcolor{red}{\textbf{#1}}}
+
+\begin{document}
+
+%--- Transition Slides ------------------------------------------
+\AtBeginSection[]{
+  \begin{frame}
+  \vfill
+  \centering
+  \begin{beamercolorbox}[sep=8pt,center,shadow=true,rounded=true]{title}
+    \usebeamerfont{title}\insertsectionhead\par%
+  \end{beamercolorbox}
+  \vfill
+  \end{frame}
+}
+
+%--- Title Slide ------------------------------------------------
+\begin{frame}
+    \titlepage
+\end{frame}
+
+%--- Outline ----------------------------------------------------
+\begin{frame}{Outline}
+    \tableofcontents
+\end{frame}
+
+\begin{frame}{Executive Summary}
+    \begin{itemize}
+        \item Diagnose the ``Wireless AI Wall'': imbalance, data scarcity, lack of interpretability.
+        \item Present a modular path to wireless foundation models: DenoMAE encoder, Plug-and-Play reasoning, Meta-Task adaptation.
+        \item Outline future scaling via DenoMAE 2.0, DiSC-AMC, and full-stack integration.
+    \end{itemize}
+\end{frame}
+
+\include{sections/problem_statement}
+\include{sections/proposed_framework}
+\include{sections/signal_encoding}
+\include{sections/llm_reasoning}
+\include{sections/meta_task}
+\include{sections/future_work}
+
+\end{document}

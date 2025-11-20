@@ -1,0 +1,68 @@
+\section{Problem Statement}
+
+\begin{frame}{Background \& Related Work}
+    \begin{itemize}
+        \item Vision/NLP foundation models (CLIP, MAE, GPT, BERT) demonstrate transfer, few-shot learning, and interpretability.
+        \item Wireless AI research remains siloed: bespoke CNNs/transformers per dataset, brittle to channel shifts \cite{kong2023transformer, gao2023moe}.
+        \item Need to bridge success of self-supervised and generative models to physical-layer intelligence without replicating their scale.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Wireless AI Pain Points}
+    \begin{itemize}
+        \item \textbf{Condition Imbalance:} Accuracy collapses when moving from high to low SNR; retraining per regime is unsustainable.
+        \item \textbf{Data Scarcity:} RF captures require hardware labs and expert annotation; labeled corpora lag petabyte-scale unlabeled streams.
+        \item \textbf{Interpretability Gap:} AMC is largely black-box, limiting trust and operator acceptance in spectrum operations.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Foundation Model Cost Barrier}
+    \begin{block}{Observation}
+        Training GPT/MAE-scale models demands billions of tokens, GPU-years, and curated data pipelines unavailable in RF labs.
+    \end{block}
+    \begin{itemize}
+        \item Wireless signals are noisy, hardware-specific, and governed by channel physics.
+        \item Directly scaling to a ``Wireless GPT'' repeats the cost profile without reusing world knowledge.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Dataset Scale Mismatch}
+    \begin{itemize}
+        \item Vision: ImageNet-22K ($>$14M labeled), LAION-5B unlabeled images.
+        \item Language: trillions of tokens + synthetic augmentation.
+        \item Wireless: datasets like RadioML/DeepSig (10–100k labeled) + limited public unlabeled IQ.
+        \item Necessitates architectures that thrive on scarce labels and moderate unlabeled corpora.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Problem Statement}
+    \begin{itemize}
+        \item Wireless AI today = isolated task models with narrow operating envelopes.
+        \item Lack of modular abstractions prevents sharing representations or reasoning.
+        \item Deployment requires cost-effective pathways that exploit existing world knowledge rather than brute-force scale.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Wireless-Specific Challenges}
+    \begin{itemize}
+        \item \textbf{Noisy physics:} Semantic meaning buried in subtle constellation statistics.
+        \item \textbf{Channel diversity:} Multipath, Doppler, hardware offsets create non-stationary distributions.
+        \item \textbf{Operational constraints:} Real-time requirements and edge deployment limit memory + compute.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Research Question 0}
+    \centering
+    \Large
+    \textit{Can we reach Wireless Physical-Layer Foundation Models (WPFMs) by \textbf{approximating} world knowledge through modular, reusable components instead of giant monoliths?}
+\end{frame}
+
+\begin{frame}{Section Overview \& Answer}
+    \begin{itemize}
+        \item We define the ``Wireless AI Wall'': imbalance, scarcity, black-box behavior.
+        \item Success demands three capabilities: generalization (encoder), reasoning (LLM), adaptation (meta-learning).
+        \item Full-stack monolithic training is infeasible; we need modular, cost-aware approximations.
+        \item \textbf{Answer to RQ0:} Pursue foundation capabilities through three coordinated modules—representation, reasoning, adaptation—that reuse world knowledge instead of recreating it.
+    \end{itemize}
+\end{frame}
+

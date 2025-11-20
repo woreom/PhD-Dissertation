@@ -1,0 +1,82 @@
+\section{LLM Reasoning: Plug-and-Play}
+
+\begin{frame}{Background \& Related Work}
+    \begin{itemize}
+        \item AMC models provide logits without human-readable explanations.
+        \item Open-set AMC is largely unsolved—unknown modulations are forced into nearest class.
+        \item LLM prompting successes (MedPrompt, Toolformer) suggest instructions + exemplars can steer reasoning.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Research Question 2}
+    \centering
+    \Large
+    \textit{Can LLMs enable open-set classification of wireless signals through world knowledge transfer?}
+\end{frame}
+
+\begin{frame}{Plug-and-Play Pipeline}
+    \begin{enumerate}
+        \item Extract descriptive + higher-order statistics from IQ samples.
+        \item Linearize stats into deterministic text strings.
+        \item Build prompt = Instruction ($I$) + exemplars ($C$) + statistics + answer set ($S$).
+        \item Query LLM (DeepSeek, o3-mini) and parse predicted modulation.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Dataset \& Experimental Setup}
+    \begin{itemize}
+        \item Synthetic dataset: 10 modulations (4ASK, 4/16PAM, CPFSK, DQPSK, GFSK, GMSK, OOK, OQPSK).
+        \item SNR sweep: noiseless (100 dB) plus [-10,10] dB with random noise injections.
+        \item 20 exemplar samples per condition; remainder used as queries.
+        \item Evaluate multiple LLM sizes (7B, 32B, 200B) and prompt variants ($I+S$ vs $I+C+S$).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Signal Summarization Details}
+    \begin{itemize}
+        \item Compute mean, variance, skewness, kurtosis, moments 0–7, cumulants, k-stats.
+        \item Algorithm~\ref{alg:summary} ensures stable ordering for reproducible prompts.
+        \item Exemplars pulled from same SNR bucket provide in-context grounding.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Prompt Engineering}
+    \begin{itemize}
+        \item Instruction block restricts answer to known modulations + ``Unknown''.
+        \item Context block lists exemplar stats + labels to teach associations.
+        \item Query block provides target stats and answer choices; deterministic decoding enforces concise outputs.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Results}
+    \begin{itemize}
+        \item DeepSeek-R1 32B with context ($I+C+S$) reaches 53.5\% accuracy on noisy [-10,10] dB data.
+        \item o3-mini (200B) attains \textbf{72.4\%} cleaned accuracy without RF-specific training.
+        \item Adding context improves accuracy up to 40\% over instruction-only prompts; larger models benefit more.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Interpretability \& Open-Set Behavior}
+    \begin{itemize}
+        \item LLM outputs natural-language rationales referencing statistics (e.g., ``high kurtosis indicates 16PAM'').
+        \item Can output ``Unknown'' when stats deviate, providing open-set rejection.
+        \item Enables white-box auditing of wireless decisions.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Limitations \& Toward DiSC-AMC}
+    \begin{itemize}
+        \item Prompts are verbose; motivates DiSC-AMC (discretized stats, exemplar pruning, constrained prompting).
+        \item Latency/token cost remain high—need distillation to smaller LLMs or on-device caches.
+        \item Future prompts will encode SNR/channel metadata for further robustness.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Section Summary \& RQ2 Answer}
+    \begin{itemize}
+        \item Plug-and-Play demonstrates training-free AMC with interpretable reasoning.
+        \item Statistical summaries act as bridge language between RF physics and LLM knowledge.
+        \item \textbf{Answer:} Yes—LLMs provide open-set, explainable classification when prompted with RF statistics, fulfilling the reasoning pillar.
+    \end{itemize}
+\end{frame}
+

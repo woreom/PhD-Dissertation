@@ -1,0 +1,88 @@
+\section{Signal Encoding: DenoMAE \& CDRF}
+
+\begin{frame}{Background \& Related Work}
+    \begin{itemize}
+        \item Traditional AMC pipelines: supervised CNNs/ViTs on constellations, little reuse across datasets.
+        \item CDRF benchmark showed YOLO/ResNet (pretrained on COCO/ImageNet) transfer to RF spectrograms.
+        \item Need self-supervised encoder that internalizes noise statistics and scales with unlabeled RF data.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Research Question 1}
+    \centering
+    \Large
+    \textit{Can vision-based, self-supervised learning effectively transfer world knowledge to the wireless domain?}
+\end{frame}
+
+\begin{frame}{CDRF as Empirical Foundation}
+    \begin{itemize}
+        \item 39 drone/RC classes, 500+ GB raw IQ, controlled SNR and interferer augmentations.
+        \item YOLOv11n achieves mAP@0.5 up to 0.986 on clean spectrograms, validating cross-modal transfer.
+        \item Provides realistic noise/interference motifs that motivate noise-aware pretraining.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{DenoMAE Overview}
+    \begin{itemize}
+        \item Multimodal masked autoencoder tailored to RF constellations and IQ-derived images.
+        \item Treats \textbf{noise} as an explicit modality to disentangle channel effects.
+        \item Encoder is reused; decoders discarded post-pretraining for efficient deployment.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Architecture Pipeline}
+    \begin{enumerate}
+        \item Patchify $224\times224$ inputs (clean/noisy constellations, clean/noisy signals, noise maps).
+        \item Mask 75\% of patches; process visibles via 12-layer ViT encoder ($d_{model}=768$).
+        \item Project shared latent into modality-specific 4-layer decoders to reconstruct masked content.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Pretraining Strategy}
+    \begin{itemize}
+        \item 10k unlabeled samples covering 10 modulation formats (BPSK, QPSK, 8PSK, QAM, GFSK, etc.).
+        \item Masking enforces global reasoning, lowering compute yet boosting denoising skill.
+        \item Optimized with AdamW, batch 64, learning rate $10^{-4}$, 100 epochs.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Data Pipeline}
+    \begin{itemize}
+        \item IQ samples reshaped to $32\times32$, interpolated, replicated to RGB for ViT compatibility.
+        \item Noise modality generated via exponential decay model capturing neighborhood energy.
+        \item Aligns with CDRF’s spectrogram evidence, creating an end-to-end cross-modal story.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Results: Robustness}
+    \begin{itemize}
+        \item +22.1\% accuracy at -10 dB SNR relative to non-pretrained ViT baseline.
+        \item Maintains 77.5–84.3\% accuracy from -10 to +10 dB using only 1k labeled samples.
+        \item Extrapolates down to -20 dB despite training $\geq$ -10 dB (see Figure~\ref{fig:extrap}).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Results: Efficiency}
+    \begin{itemize}
+        \item Needs 10× fewer unlabeled samples than AlexNet AMC and 3× fewer labeled samples at fine-tune.
+        \item Ablations show noise modality delivers ~2\% extra accuracy, highlighting benefit of treating noise as data.
+        \item Outperforms CNN-AMC, NMformer, DL-GRF on accuracy while using smaller datasets.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Ablation Highlights}
+    \begin{itemize}
+        \item Modalities removed sequentially: still 81.3\% with constellations only, 83.5\% with all five.
+        \item Clean vs noisy constellation pairing adds +0.6\%; adding time-domain signal adds +1.3\%.
+        \item Explicit noise branch regularizes encoder during pretraining without affecting inference cost.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Section Summary \& RQ1 Answer}
+    \begin{itemize}
+        \item CDRF proves cross-modal feasibility; DenoMAE operationalizes self-supervised transfer.
+        \item Noise-as-modality + heavy masking deliver low-SNR robustness and vast data efficiency while feeding downstream modules.
+        \item \textbf{Answer:} RQ1 is affirmed—vision-based self-supervised learning can approximate world knowledge for RF, yielding a reusable encoder for wireless foundation models.
+    \end{itemize}
+\end{frame}
+

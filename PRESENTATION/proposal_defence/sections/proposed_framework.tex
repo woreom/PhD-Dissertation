@@ -1,0 +1,87 @@
+\section{Proposed Framework}
+
+\begin{frame}{Background \& Related Work}
+    \begin{itemize}
+        \item GPT/CLIP pipelines follow a pattern: massive self-supervised pretraining + instruction-tuned reasoning + lightweight adapters.
+        \item Wireless counterparts largely skip pretraining; models are retrained per dataset and lack reasoning layers.
+        \item Prior modular ideas (Mixture-of-Experts, NMformer) still bind components tightly; fail to leverage world knowledge stored in LLMs/Vision FMs.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{How GPT-Class Models are Built}
+    \begin{enumerate}
+        \item \textbf{Stage A — Representation:} Learn universal token embeddings via masked prediction/next-token tasks.
+        \item \textbf{Stage B — Reasoning:} Align model to follow instructions, cite exemplars, and explain outputs.
+        \item \textbf{Stage C — Adaptation:} Apply LoRA, prefixes, or small finetunes for downstream tasks.
+    \end{enumerate}
+    \begin{itemize}
+        \item We adopt this recipe for RF by swapping modalities and cost structures.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Modular Architecture Overview}
+    \begin{columns}
+        \column{0.33\textwidth}
+        \textbf{DenoMAE}\\(Signal Encoding)
+        
+        \column{0.33\textwidth}
+        \textbf{Plug-and-Play}\\(LLM Reasoning)
+        
+        \column{0.33\textwidth}
+        \textbf{Meta-Task}\\(Rapid Adaptation)
+    \end{columns}
+    \begin{itemize}
+        \item Modules communicate through interpretable interfaces (images, statistics, latent vectors).
+        \item Together they deliver generalization (encoder), reasoning (LLM), and adaptation (meta-learning).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Research Questions}
+    \begin{itemize}
+        \item \textbf{RQ1:} Can vision-style self-supervised learning transfer world knowledge into RF representations?
+        \item \textbf{RQ2:} Can LLMs, prompted with signal statistics, provide open-set, interpretable classification?
+        \item \textbf{RQ3:} Can meta-learning with learnable regularization enable few-shot adaptation across deployments?
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{System Flow}
+    \begin{enumerate}
+        \item Collect unlabeled IQ/constellation data (incl. CDRF) $\rightarrow$ pretrain DenoMAE.
+        \item Summarize encoder outputs into statistics $\rightarrow$ prompt LLM for reasoning.
+        \item Use Meta-Task to adapt encoder or downstream heads with 5–10 labeled samples.
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Data \& Compute Strategy}
+    \begin{itemize}
+        \item \textbf{Encoding:} 10k unlabeled samples; treat noise as modality for efficiency.
+        \item \textbf{Reasoning:} Zero-shot prompts leveraging billions-token LLM priors; no RF retraining.
+        \item \textbf{Adaptation:} Episodic few-shot tasks on small datasets (MiniImageNet, FC100) as proxies for AMC deployments.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Evaluation Roadmap}
+    \begin{itemize}
+        \item \textbf{Representation:} DenoMAE + CDRF stress-test cross-modal transfer.
+        \item \textbf{Reasoning:} Plug-and-Play validated on synthetic AMC with SNR sweeps.
+        \item \textbf{Adaptation:} Meta-Task benchmarked on standard FSL datasets before translating to wireless tasks.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Metrics \& Targets}
+    \begin{itemize}
+        \item \textbf{Representation:} Accuracy at -10 dB SNR, data efficiency (unlabeled+ labeled ratios).
+        \item \textbf{Reasoning:} One-shot accuracy across SNR range, open-set rejection rate, explanation quality.
+        \item \textbf{Adaptation:} 5-way 1-shot/5-shot accuracy, convergence episodes, sample efficiency.
+        \item Align metrics to highlight cost savings relative to monolithic FM training.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Section Overview \& Answer}
+    \begin{itemize}
+        \item \textbf{Approach:} Mirror GPT pipeline via three modular components tailored to RF physics.
+        \item \textbf{Answer:} A cost-effective wireless foundation model emerges when representation, reasoning, and adaptation are decoupled yet composable.
+        \item Subsequent sections provide empirical validation for RQ1–RQ3.
+    \end{itemize}
+\end{frame}
+

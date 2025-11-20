@@ -1,0 +1,6 @@
+\beamer@sectionintoc {1}{Problem Statement}{4}{0}{1}
+\beamer@sectionintoc {2}{Proposed Framework}{13}{0}{2}
+\beamer@sectionintoc {3}{Signal Encoding: DenoMAE \& CDRF}{23}{0}{3}
+\beamer@sectionintoc {4}{LLM Reasoning: Plug-and-Play}{35}{0}{4}
+\beamer@sectionintoc {5}{Fast Adaption: Meta-Task}{46}{0}{5}
+\beamer@sectionintoc {6}{Future Works \& Conclusion}{56}{0}{6}

@@ -1,0 +1,73 @@
+\section{Fast Adaption: Meta-Task}
+
+\begin{frame}{Background \& Related Work}
+    \begin{itemize}
+        \item Few-shot learning (FSL) methods—MAML, Prototypical Networks, MetaOptNet—still overfit when labeled data per task is tiny.
+        \item Existing regularizers (dropout, weight decay, MetaMix) are static or task-specific.
+        \item Wireless deployments demand fast adaptation to new emitters/SNRs with 5–10 samples.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Research Question 3}
+    \centering
+    \Large
+    \textit{Can meta-learning enable rapid adaptation to new tasks with minimal labeled data?}
+\end{frame}
+
+\begin{frame}{Meta-Task Concept}
+    \begin{itemize}
+        \item Treat regularization itself as a learnable auxiliary task.
+        \item Introduce Task-Decoder that reconstructs inputs from embeddings, forcing rich representations.
+        \item Method-agnostic: drop-in for ProtoNet, MAML, MetaOptNet, P$>$M$>$F.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Architecture}
+    \begin{itemize}
+        \item Encoder $f_{\theta}$ shared with base meta-learner.
+        \item Task-Decoder $g_{\phi}$ autoencoder reconstructs support+query embeddings.
+        \item Loss: $J = J_{\mathcal{T}} + \lambda J_{\mathcal{M}}$, optimized jointly per episode.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Optimization Dynamics}
+    \begin{itemize}
+        \item Episodes sample support/query; both feed Task-Decoder to learn reconstruction.
+        \item Reconstruction encourages embeddings to retain more than discriminative cues.
+        \item Separate gradients for $\theta$ and $\phi$ maintain stability; no extra labeled data needed.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Datasets \& Training Config}
+    \begin{itemize}
+        \item Benchmarks: MiniImageNet, TieredImageNet, FC100, plus transformer-based P$>$M$>$F settings.
+        \item Episodes: 5-way 1-shot and 5-way 5-shot, query size 15; 50k episodes per run.
+        \item Task-Decoder variants: shallow (75K params) vs deep (250K) to study capacity trade-offs.
+        \item Optimizers: Adam ($1\!\times\!10^{-4}$) for encoder/classifier, $1\!\times\!10^{-6}$ for Task-Decoder.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Results Across Backbones}
+    \begin{itemize}
+        \item \textbf{ProtoNet:} +5.9\% absolute accuracy on TieredImageNet 5-way 5-shot (65.4 $\rightarrow$ 71.3).
+        \item \textbf{MetaOptNet:} Improves to 77.3\% (MiniImageNet 5-shot) and 78.66\% (Tiered) with same training budget.
+        \item \textbf{P$>$M$>$F:} 92.3\% accuracy in 3k episodes vs 90.7\% after 4k episodes (faster convergence).
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Relevance to Wireless FM}
+    \begin{itemize}
+        \item Rapidly adapt DenoMAE encoders to new modulation/channel conditions with only a handful of labeled traces.
+        \item Task-Decoder can operate on constellation or spectrogram embeddings, making it modality-agnostic.
+        \item Reduces retraining cost for each deployment; aligns with cost-effective foundation vision.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Section Summary \& RQ3 Answer}
+    \begin{itemize}
+        \item Meta-Task reformulates regularization as a learnable auxiliary objective, boosting FSL across backbones.
+        \item Demonstrated faster convergence and higher accuracy with minimal labeled data.
+        \item \textbf{Answer:} Yes—meta-learning with learnable regularization achieves rapid adaptation, completing the adaptation pillar of the modular framework.
+    \end{itemize}
+\end{frame}
+

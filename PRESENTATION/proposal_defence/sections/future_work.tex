@@ -1,0 +1,83 @@
+\section{Future Works \& Conclusion}
+
+\begin{frame}{Background \& Related Work}
+    \begin{itemize}
+        \item Foundation models continue to expand via hybrid generative-discriminative objectives (e.g., MAE 2.0, CLIP 2).
+        \item LLM efficiency research (DiSC, prompt pruning) informs practical deployment.
+        \item Multi-module orchestration (vision-language-action) inspires wireless FM fusion plans.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Future Research Question}
+    \centering
+    \Large
+    \textit{How do we scale the three validated modules into an integrated, resource-aware Wireless FM ready for field deployment?}
+\end{frame}
+
+\begin{frame}{Summary of Contributions}
+    \begin{enumerate}
+        \item \textbf{DenoMAE:} Multimodal self-supervised encoder for RF signals (representation pillar).
+        \item \textbf{Plug-and-Play:} LLM-based reasoning for open-set, interpretable AMC (reasoning pillar).
+        \item \textbf{Meta-Task:} Learnable regularization for rapid adaptation (adaptation pillar).
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Future Work: DenoMAE 2.0}
+    \textbf{Hybrid Generative-Discriminative Learning}
+    \begin{itemize}
+        \item Augment reconstruction with position-aware patch classification for spatial awareness.
+        \item Incorporate spectrogram modality from CDRF to capture temporal-frequency cues.
+        \item Goal: learn global + local structure, enabling downstream detection tasks.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Future Work: DiSC-AMC}
+    \textbf{Token- and Parameter-Efficient LLM Reasoning}
+    \begin{itemize}
+        \item Discretize statistics to compact vocabularies.
+        \item Dynamic exemplar pruning to keep prompts short.
+        \item Constrained prompting to enforce structured outputs on edge devices.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Future Work: Synergistic Integration}
+    \begin{itemize}
+        \item Pipeline: DenoMAE 2.0 features $\rightarrow$ Meta-Task adapters $\rightarrow$ DiSC-AMC reasoning.
+        \item Shared metadata (SNR, channel estimates) passed across modules for context.
+        \item Target: deployable Wireless Physical-Layer FM with interpretable outputs.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Roadmap}
+    \begin{itemize}
+        \item Short term: scale datasets (CDRF expansions), run ablations on DenoMAE 2.0 objectives.
+        \item Mid term: prototype DiSC-AMC on smaller LLMs, integrate with DenoMAE embeddings.
+        \item Long term: system-level demos (spectrum monitoring, adaptive radar) with full modular stack.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Section Summary \& RQ Answer}
+    \begin{itemize}
+        \item Future work focuses on enhancing each pillar (representation, reasoning, adaptation) and fusing them.
+        \item \textbf{Answer:} Scaling the validated modules through DenoMAE 2.0, DiSC-AMC, and their integration provides a practical path to a deployable wireless foundation model.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Conclusion}
+    \centering
+    \Large
+    This dissertation provides a \textbf{blueprint} for the future of Wireless AI.
+    \vspace{0.5cm}
+    \normalsize
+    By strategically integrating world knowledge from Vision and Language, we can break the ``Wireless AI Wall'' and achieve scalable, robust, and intelligent communications.
+\end{frame}
+
+\begin{frame}
+    \centering
+    \Huge
+    Thank You
+    \vspace{1cm}
+    \normalsize
+    Questions?
+\end{frame}
+
