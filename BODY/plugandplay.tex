@@ -1,4 +1,4 @@
-\chapter{Plug-and-Play Alignment for Large Language Models}
+\chapter{LLM-Based Reasoning for Open-Set Modulation Classification: Plug-and-Play and DiSC-AMC}
 \label{chap:plugandplay}
 
 
@@ -219,17 +219,224 @@ Second, the effect of model size is evident. The DeepSeek-R1-Distill-Qwen-32B mo
 %   \label{fig:confusion_deepseek32B}
 % \end{figure}
 
-\section{Conclusion}
-\label{sec:con}
-{{
-    % We introduce the first in‑context AMC framework that encodes high‑order cumulant features as LLM prompts, achieving up to 72.4\% cleaned accuracy with o3‑mini on synthetic data. While demonstrating strong scalability, its reliance on synthetic signals and large proprietary models limits practical deployment. Future work will validate on OTA traces, distill compact LLMs, and enrich prompts with explicit SNR and multimodal inputs, advancing LLM‑driven foundation models for wireless communications.  
+\section{From Plug-and-Play to DiSC-AMC: The Token-Efficiency Bottleneck}
+\label{sec:pnp_to_disc}
 
-This paper presents a novel in-context approach to automatic modulation classification that takes advantage of higher-order statistics and cumulative estimation through prompt-based classification using a pre-trained large language model. By transforming quantitative signal features into natural language descriptions, our framework effectively captures the intrinsic characteristics of complex-valued signals across diverse scenarios without relying on explicit channel or SNR inputs. Experimental results on synthetically generated datasets demonstrate that incorporating exemplar context into the prompt significantly boosts classification accuracy, and that larger models—such as o3-mini can further enhance performance, particularly under noisy conditions.
+This paper presents a novel in-context approach to automatic modulation classification that takes advantage of higher-order statistics and cumulative estimation through prompt-based classification using a pre-trained large language model. By transforming quantitative signal features into natural language descriptions, our framework effectively captures the intrinsic characteristics of complex-valued signals across diverse scenarios without relying on explicit channel or SNR inputs. Experimental results on synthetically generated datasets demonstrate that incorporating exemplar context into the prompt significantly boosts classification accuracy, and that larger models such as o3-mini can further enhance performance, particularly under noisy conditions.
 
-\textbf{Connection to the Dissertation Framework:} This Plug-and-Play LLM approach addresses Research Question 2 (RQ2): \textit{Can LLMs enable open-set classification of wireless signals through world knowledge transfer?} The affirmative answer—achieving 72.4\% accuracy without wireless-specific training—validates a core principle of this dissertation: cost-effective wireless foundation models through strategic integration of pre-trained world knowledge. This work complements DenoMAE's unsupervised representation learning (Chapter~\ref{chap:denomae}) by demonstrating an alternative knowledge source (language models vs. vision transformers), and pairs naturally with Meta-Task's few-shot adaptation (Chapter~\ref{chap:meta_task}) for scenarios requiring rapid deployment. The training-free nature dramatically reduces deployment costs, while interpretable LLM reasoning provides human-understandable explanations lacking in end-to-end neural approaches. Future integration could leverage DenoMAE features as richer prompt inputs, while Meta-Task could optimize prompt strategies with minimal examples. Together with the other contributions, Plug-and-Play demonstrates that wireless foundation models can economically incorporate sophisticated reasoning by bridging signal processing and natural language understanding.
+Plug-and-Play establishes feasibility: a pre-trained LLM, given no wireless-specific training, can classify modulation schemes from statistical descriptions alone. However, the proof-of-concept exposes a severe efficiency bottleneck. Serializing raw, high-precision floating-point statistics into the prompt consumes a massive token budget (2.9K tokens per query) and overwhelms small models with numerical noise rather than actionable patterns: the 7B-parameter DeepSeek-R1-Distill-Qwen model reaches only 5.2\% cleaned accuracy on noisy data at this prompt length, and competitive accuracy (69.92\%) is only achieved by routing through a proprietary 200B-parameter model (o3-mini). This renders the approach impractical for resource-constrained, real-time, or edge deployment---precisely the deployment regime a cost-effective wireless foundation model must target.
 
-Overall, our work represents a significant first step toward leveraging large language models for automatic modulation classification. We are confident that further advancements in prompt design, model architecture, and domain-specific integration will unlock new possibilities for robust and efficient signal processing in wireless communications.
-}}
+The remainder of this chapter introduces \textbf{DiSC-AMC} (Discretized Self-supervised Candidate Retrieval AMC)~\cite{disc_amc}, the dissertation's central answer to RQ2. DiSC-AMC keeps Plug-and-Play's core insight---that statistical signal summaries can be linearized into LLM prompts---but replaces raw floating-point serialization with a token- and parameter-efficient pipeline built on three mechanisms: (i) \textbf{feature discretization}, which maps continuous statistics to compact symbolic tokens; (ii) \textbf{context retrieval}, which uses a self-supervised visual encoder to select query-specific exemplars rather than a static, generic set; and (iii) \textbf{candidate retrieval}, which prunes the label space to a small, plausible multiple-choice set before the LLM ever reasons about the query. Together these mechanisms cut prompt length by over 50\% and let a 7B open-weight model match or beat the 200B proprietary baseline, while a fine-tuned 7B model matches or surpasses dedicated supervised AMC encoders in- and out-of-distribution.
+
+\section{DiSC-AMC: Discretized Self-Supervised Candidate Retrieval}
+\label{sec:disc_amc}
+
+\subsection{Problem Formulation}
+
+Let $x \in \mathbb{C}^N$ denote an observed baseband signal comprising $N$ complex I/Q samples received under an unknown modulation scheme $m \in \mathcal{M}$, where $\mathcal{M} = \{m_1, m_2, \dots, m_C\}$ is the set of $C$ candidate modulation classes. The goal of AMC is to learn a mapping $f: \mathbb{C}^N \to \mathcal{M}$ that assigns $x$ to its true class. DiSC-AMC decomposes $f$ into a chain of transformations,
+\begin{equation}
+    f = f_{\mathrm{LLM}} \circ f_{\mathrm{prompt}} \circ f_{\mathrm{disc}} \circ f_{\mathrm{feat}},
+\end{equation}
+where each component---feature extraction, discretization, prompt assembly, and LLM classification---is detailed below and illustrated in Figure~\ref{fig:disc_pipeline}.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.9\textwidth]{FIGURES/disc/method.png}
+\caption{Overview of the DiSC-AMC pipeline. (1) Raw I/Q signals are rendered as constellation diagrams and encoded into latent embeddings via a self-supervised visual encoder (DINOv2 ViT-B). (2) The continuous feature vector is quantized into ordinal bins and mapped to compact alphabetic symbols, achieving 3--5$\times$ token compression over raw floating-point serialization. (3) A two-stage retrieval module shortlists the $k_{\text{top}}$ most probable classes via centroid or FAISS proximity and retrieves the $k_{\mathrm{NN}}$ most similar labeled exemplars, forming a query-specific, pruned context. (4) The discretized query, retrieved exemplars, and candidate options are assembled into a $\sim$0.5K--1.3K token prompt. (5) A QLoRA fine-tuned DeepSeek-R1-Distill-Qwen-7B model performs chain-of-thought reasoning over the symbolic features before predicting the modulation class.}
+\label{fig:disc_pipeline}
+\end{figure*}
+
+\subsection{Stage 1: Signal Representation and Feature Extraction}
+
+DiSC-AMC supports two parallel feature extraction pathways. From the raw I/Q signal $x$, a \emph{statistical feature} vector is computed,
+\begin{equation}
+    s = \left[\hat\mu_2, \dots, \hat\mu_{10},\ \hat\kappa_1,\dots,\hat\kappa_4,\ \hat\gamma_1, \hat\gamma_2,\ \hat\sigma_{\kappa_1}, \hat\sigma_{\kappa_2},\ \mathrm{SNR}\right]^{\top} \in \mathbb{R}^{D_s},
+\end{equation}
+where $\hat\mu_k$ are sample central moments of order $k$, $\hat\kappa_j$ are $k$-statistics (minimum-variance unbiased cumulant estimators), $\hat\gamma_1,\hat\gamma_2$ are skewness and kurtosis, and SNR is the estimated signal-to-noise ratio---the same statistical summary used earlier in this chapter (Section~\ref{sec:back}), with higher-order cumulants providing theoretical separation among BPSK, QPSK, and QAM families.
+
+Alternatively, the signal is rendered as a constellation-diagram image and passed through a self-supervised visual \emph{encoder embedding} pathway: $z = g_\theta(\mathrm{img}(x)) \in \mathbb{R}^{D_z}$, reduced via PCA to $D_e \ll D_z$ components, $e = \mathrm{PCA}_{D_e}(z) \in \mathbb{R}^{D_e}$. This produces a compact, model-agnostic feature vector capturing learned visual patterns from the constellation geometry---the same DenoMAE-style representation philosophy developed in Chapter~\ref{chap:denomae}, here instantiated with a frozen DINOv2 ViT-B encoder. Either feature vector ($s$ or $e$) is standardized via a \texttt{StandardScaler} fit on the training set.
+
+\subsection{Stage 2: Discretization Mechanism}
+
+The central innovation of DiSC-AMC maps any numerical signal representation to compact symbolic tokens, normalizing feature scales and compelling the model to focus on qualitative patterns rather than decimal precision. Given a feature vector $v \in \mathbb{R}^D$ (either $s$ or $e$), each dimension $v_j$ is independently quantized into one of $B$ ordinal bins via a \texttt{KBinsDiscretizer} with uniform strategy,
+\begin{equation}
+    q_j = \left\lfloor \frac{v_j - v_j^{\min}}{v_j^{\max} - v_j^{\min}} \cdot B \right\rfloor, \qquad q_j \in \{0, 1, \dots, B-1\},
+\end{equation}
+with bin edges fit on training data and applied deterministically at test time. Each integer bin index $q_j$ is encoded as a base-26 alphabetic symbol, $\phi(q_j) = \mathrm{base26}(q_j) \in \{A, B, \dots, Z, AA, \dots\}$, so the full signal representation becomes a sequence of symbolic tokens,
+\begin{equation}
+    f_{\mathrm{disc}}(v) = \left[\mathrm{feat}_1\!:\!\phi(q_1),\ \mathrm{feat}_2\!:\!\phi(q_2),\ \dots,\ \mathrm{feat}_D\!:\!\phi(q_D)\right].
+\end{equation}
+Discretization offers three benefits: (i) it compresses each feature from a multi-digit floating-point string to one or two characters, cutting prompt token count by roughly $3$--$5\times$; (ii) it abstracts away measurement noise, making the representation robust to small perturbations; and (iii) ordinal letter codes align naturally with the symbolic reasoning strengths of LLMs, rather than their comparatively weak numerical precision.
+
+\subsection{Stage 3: Dynamic Context Construction}
+
+Rather than a large, fixed exemplar set as in Plug-and-Play, DiSC-AMC builds a compact, query-specific context via two retrieval mechanisms, both driven by the self-supervised visual encoder.
+
+\textbf{Context (few-shot) retrieval.} A FAISS index~\cite{faiss_douze2025} is built over the scaled feature vectors of all training signals. At inference, for a query feature vector $v_q$, the $k_{\mathrm{NN}}$ nearest training signals are retrieved via inverse-squared-distance weighting, grouped by class label, and added to the prompt as signal-specific, diverse few-shot demonstrations. When a minimum-class-diversity constraint is specified, the search radius expands (up to $3k_{\mathrm{NN}}$ candidates) with per-class brute-force scans to fill any missing classes.
+
+\textbf{Candidate retrieval.} To further constrain the LLM's decision space, the full label set $\mathcal{M}$ is narrowed to the $k_{\mathrm{top}}$ most plausible classes using the same encoder, via one of four interchangeable strategies: (a) \emph{Centroid}---Euclidean distance from $z$ to per-class prototype centroids; (b) \emph{FAISS $k$NN}---inverse-distance-weighted voting among nearest neighbors; (c) \emph{DNN head}---softmax probabilities from a trained classification head; (d) \emph{Random Forest}---class vote counts from an RF classifier on encoder features. Applied to constellation images of the 10-class synthetic benchmark, candidate retrieval at $k_{\mathrm{top}}=5$ achieves \textbf{99.83\% recall}---the correct class is included in the shortlist in nearly every query---reducing the LLM's task from $C$-way to $k_{\mathrm{top}}$-way classification and preventing hallucinated out-of-vocabulary labels.
+
+\subsection{Stage 4: LLM Inference and Prompt Design}
+
+The final prompt assembles three components: (1) an \emph{instruction template} (role description and response-format guide, optionally annotated with the candidate-retrieval method and feature type); (2) \emph{few-shot context} (the dynamically retrieved exemplars, each a discretized feature string paired with its ground-truth label); and (3) the \emph{query} (the discretized feature string of the test signal, followed by its candidate class options). The LLM is instructed to reason step-by-step inside \texttt{<think>} tags before outputting a single label, encouraging chain-of-thought deliberation over the symbolic features rather than the raw query.
+
+\subsection{Experimental Setup}
+\label{sec:disc_exp_setup}
+
+\textbf{Datasets.} \emph{SynthMod-10} follows the Plug-and-Play generation protocol (Section~\ref{sec:exp}): 10 digital modulation classes (4ASK, 4PAM, 8ASK, 16PAM, CPFSK, DQPSK, GFSK, GMSK, OOK, OQPSK), 10,000 training signals, 200 in-distribution test queries ($-10$ to $+10$ dB), and 200 out-of-distribution (OOD) queries ($-15$ to $-11$ dB, never seen in training). \emph{RadioML 2018.01a}~\cite{oshea2018radioml} is a 24-class benchmark with real channel impairments (Rician fading, AWGN, frequency/phase drift), entirely disjoint from SynthMod-10, evaluated at five SNR levels ($-20,-10,0,+10,+20$ dB) with 2{,}400 training and 240 test samples per SNR level.
+
+\textbf{Baselines.} Training-free baselines use the Plug-and-Play prompt format on DeepSeek-R1-Distill-Qwen (7B/32B); supervised/OOD baselines use DenoMAE~\cite{faysal2025denomae}, DenoMAE2.0~\cite{faysal2025denomae20improvingdenoisingmasked}, and NMformer~\cite{faysal2024nmformer} as fixed, non-LLM classification heads.
+
+\textbf{Default configuration.} Unless noted otherwise, results use DeepSeek-R1-Distill-Qwen-7B fine-tuned via QLoRA on the training set, 5 discretization bins, FAISS $k_{\mathrm{NN}}=10$ context retrieval, and $k_{\mathrm{top}}=5$ candidate retrieval over DINOv2 encoder embeddings.
+
+\textbf{Evaluation protocol.} Five scenarios isolate specific capabilities: (I) in-distribution classification on SynthMod-10; (II) near-OOD robustness on SynthMod-10; (III) cross-dataset transfer to RadioML with a fine-tuned encoder; (IV) cross-dataset transfer to RadioML with an unadapted encoder; (V) token and parameter efficiency. Ablations then dissect pipeline architecture choices and prompt-design tradeoffs.
+
+\subsection{Results}
+\label{sec:disc_results}
+
+\textbf{Scenario I: In-distribution classification.} Table~\ref{tab:disc_scenario1} compares DiSC-AMC against supervised baselines on SynthMod-10. DiSC-AMC, using a 7B open-weight LLM with FAISS-retrieved exemplars over DINOv2 embeddings, achieves \textbf{83.00\%}, surpassing every supervised baseline including DenoMAE2.0 (82.40\%, the strongest encoder-only method from Chapter~\ref{chap:denomae}).
+
+\begin{table}[htbp]
+\centering
+\caption{Scenario I: In-distribution classification on SynthMod-10.}
+\label{tab:disc_scenario1}
+\begin{tabular}{lcc}
+\toprule
+Model & Params & Acc.\ (\%) \\
+\midrule
+DINOv2 & 86M & 65.33 \\
+NMformer~\cite{faysal2024nmformer} & 86M & 71.60 \\
+ViT~\cite{faysal2025denomae20improvingdenoisingmasked} & 86M & 79.90 \\
+DEiT~\cite{faysal2025denomae20improvingdenoisingmasked} & 86M & 81.20 \\
+MoCov3~\cite{faysal2025denomae20improvingdenoisingmasked} & 86M & 81.00 \\
+BEiT~\cite{faysal2025denomae20improvingdenoisingmasked} & 86M & 80.40 \\
+MAE~\cite{faysal2025denomae20improvingdenoisingmasked} & 86M & 80.10 \\
+DenoMAE~\cite{faysal2025denomae} & 86M & 81.30 \\
+DenoMAE2.0~\cite{faysal2025denomae20improvingdenoisingmasked} & 86M & 82.40 \\
+\textbf{DiSC-AMC (ours)} & \textbf{7B} & \textbf{83.00} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Scenario II: Near-OOD robustness.} Shifting the test set to an unseen SNR range ($-15$ to $-11$ dB) outside the training distribution, DiSC-AMC maintains \textbf{82.50\%} OOD accuracy (Table~\ref{tab:disc_scenario2}), a drop of only 0.5 points from in-distribution, far exceeding standalone encoder baselines.
+
+\begin{table}[htbp]
+\centering
+\caption{Scenario II: Near-OOD robustness on SynthMod-10.}
+\label{tab:disc_scenario2}
+\begin{tabular}{lcc}
+\toprule
+Model & Params & OOD Acc.\ (\%) \\
+\midrule
+DINOv2 & 86M & 63.90 \\
+DenoMAE2.0~\cite{faysal2025denomae20improvingdenoisingmasked} & 86M & 63.25 \\
+\textbf{DiSC-AMC (ours)} & \textbf{7B} & \textbf{82.50} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Scenarios III \& IV: Cross-dataset transfer to RadioML.} These scenarios test whether DiSC-AMC's reasoning amplifies an encoder backbone's own classification head when transferred to the entirely disjoint 24-class RadioML benchmark, with the encoder either fine-tuned (III) or left unadapted (IV). Table~\ref{tab:disc_scenario3} shows that with a fine-tuned DINOv2 backbone, DiSC-AMC reaches \textbf{76.25\%} at $+20$ dB versus just 9.58\% for the fine-tuned encoder's own head---an \textbf{8$\times$} improvement. Table~\ref{tab:disc_scenario4} shows the same effect holds even without any target-domain adaptation: DiSC-AMC with an unadapted DINOv2 reaches 45.42\% at $+20$ dB versus 7.08\% for the head alone. In both scenarios, standalone encoder heads plateau below 15\% across all SNR levels, confirming that reasoning---not the encoder alone---drives cross-dataset generalization. Notably, DenoMAE2.0 as the DiSC-AMC backbone \emph{underperforms} DINOv2 on RadioML at higher SNRs (Table~\ref{tab:disc_scenario3}, $+10$/$+20$ dB), indicating that DenoMAE2.0's synthetic-data-trained features do not retrieve informative neighbors on this out-of-family dataset even though they excel in-distribution (Scenario I).
+
+\begin{table}[htbp]
+\centering
+\caption{Scenario III: Cross-dataset transfer with a fine-tuned encoder (RadioML 2018.01a, 24 classes).}
+\label{tab:disc_scenario3}
+\begin{tabular}{c cc cc}
+\toprule
+ & \multicolumn{2}{c}{Fine-tuned encoder (\%)} & \multicolumn{2}{c}{DiSC-AMC (\%)} \\
+SNR (dB) & DINOv2 & DenoMAE2.0 & DINOv2 & DenoMAE2.0 \\
+\midrule
+$-20$ & 3.33 & 4.17  & 19.58 & 17.92 \\
+$-10$ & 3.33 & 5.42  & 17.50 & 19.17 \\
+$0$   & 6.67 & 8.75  & 40.83 & 25.00 \\
+$+10$ & 8.75 & 13.33 & 72.50 & 24.17 \\
+$+20$ & 9.58 & 11.25 & \textbf{76.25} & 21.25 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{Scenario IV: Cross-dataset transfer with an unadapted encoder (RadioML 2018.01a, 24 classes).}
+\label{tab:disc_scenario4}
+\begin{tabular}{c cc cc}
+\toprule
+ & \multicolumn{2}{c}{Encoder only (\%)} & \multicolumn{2}{c}{DiSC-AMC (\%)} \\
+SNR (dB) & DINOv2 & DenoMAE2.0 & DINOv2 & DenoMAE2.0 \\
+\midrule
+$-20$ & 3.75  & 3.33  & 10.83 & 15.42 \\
+$-10$ & 5.00  & 2.92  & 11.67 & 5.83 \\
+$0$   & 6.67  & 9.58  & 28.33 & 12.50 \\
+$+10$ & 15.00 & 14.58 & 36.25 & 5.83 \\
+$+20$ & 7.08  & 12.92 & \textbf{45.42} & 6.25 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Scenario V: Token and parameter efficiency.} Table~\ref{tab:disc_scenario5} isolates the cost of reasoning. The Plug-and-Play baseline requires a 2.9K-token prompt and reaches only 5.20\% on a 7B model; even the 200B-parameter o3-mini reaches 69.92\%. DiSC-AMC's fine-tuned 7B model reaches \textbf{71.9\%} at just \textbf{0.5K tokens}---surpassing the 200B baseline at roughly one-sixth the prompt length and two orders of magnitude fewer parameters.
+
+\begin{table}[htbp]
+\centering
+\caption{Scenario V: Token and parameter efficiency.}
+\label{tab:disc_scenario5}
+\begin{tabular}{lccc}
+\toprule
+Model & Params & \#Tokens & Acc.\ (\%) \\
+\midrule
+DeepSeek-R1 (PnP) & 7B & 2.9K & 5.20 \\
+DeepSeek-R1 (PnP) & 32B & 2.9K & 47.80 \\
+o3-mini (PnP) & 200B & 2.9K & 69.92 \\
+\textbf{DeepSeek-R1 (DiSC-AMC)} & \textbf{7B} & \textbf{0.5K} & \textbf{71.9} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ablation Studies}
+\label{sec:disc_ablations}
+
+Using DeepSeek-R1-Distill-Qwen-7B and GLM-4.6V-Flash in a training-free setting, four independent design axes are varied: candidate-retrieval strategy, feature representation, context retrieval (RAG), and distribution shift.
+
+\textbf{Candidate retrieval: FAISS vs.\ centroid.} FAISS $k$NN retrieval substantially outperforms centroid-based selection: 66.1\% vs.\ 32.8\% in-distribution, and 62.6\% vs.\ 42.5\% under moderate OOD shift. Centroid-selected exemplars cluster around class means and lack query-specific diversity; a key factor is \emph{SNR matching}---because signal statistics vary substantially with SNR, exemplars from a mismatched noise level confuse rather than guide the LLM, and FAISS retrieval naturally preserves SNR proximity where centroid selection does not.
+
+\textbf{Feature representation: embeddings vs.\ statistics.} Replacing discretized statistics with self-supervised encoder embeddings as the retrieval feature consistently improves accuracy: the best embedding-based configuration reaches 71.5\% in-distribution versus 69.0\% for the best statistics-only configuration---the encoder captures visual invariances of constellation diagrams that cumulant statistics do not.
+
+\textbf{Context retrieval (RAG) vs.\ fixed exemplars.} RAG-augmented and fixed-exemplar pipelines achieve comparable mean accuracy in-distribution (47.2\% vs.\ 51.8\%); RAG's dynamic retrieval catches up to the fixed set at 52.6\% under OOD shift, indicating that \emph{which} exemplars are retrieved (FAISS vs.\ centroid) matters far more than \emph{how many} are added per query.
+
+\textbf{Out-of-distribution generalization and the noise floor.} Accuracy degrades gracefully under moderate OOD shift ($-11$ to $-15$ dB): the best FAISS configuration retains 68.5\%, only 3 points below its 71.5\% in-distribution score. Under extreme shift ($-30$ dB), however, all configurations collapse to near-random levels ($\sim$5--10\%)---at this noise level constellation diagrams become effectively featureless, so the self-supervised encoder's embeddings lose discriminative structure and both retrieval and classification degrade to chance. This is a fundamental limitation of any retrieval pipeline built on visual signal representations, and directly echoes the low-SNR collapse observed for DenoMAE in Chapter~\ref{chap:denomae}.
+
+\textbf{Prompt design tradeoffs.} Table~\ref{tab:disc_prompt_format} isolates prompt format in the training-free setting. The 7B DeepSeek model under the raw Plug-and-Play prompt achieves only 9\%, confirming that floating-point serialization overwhelms small models; a 5B Gemini-2.5-Flash with a 1.3K-token DiSC-AMC prompt reaches 45.5\%, comparable to a 32B DeepSeek PnP baseline (32.5\%) at under half the token cost, and Gemini-2.5-Pro at 0.9K tokens reaches 51.0\%---the best training-free configuration. Increasing the candidate-set size $k_{\mathrm{top}}$ from 4 to 5 yields a marginal gain (44.5\%$\to$45.5\%) for a small token cost; expanding to $k_{\mathrm{top}}=10$ (10 bins) expands the prompt to 2.9K tokens while accuracy \emph{drops} to 29.5\%, since candidate-retrieval recall already reaches 99.83\% at $k_{\mathrm{top}}=5$. Discretization granularity shows a similar ``less is more'' pattern: Gemini-2.5-Flash peaks at 5 bins (45.5\%) and degrades monotonically with finer bins, while the more capable Gemini-2.5-Pro peaks later, at 10 bins (47.5\%), before declining---coarse symbolic codes align better with LLM reasoning over noisy physical-layer signals than high-precision numerical detail, for most models.
+
+\begin{table}[htbp]
+\centering
+\caption{Effect of prompt format on training-free LLMs (centroid candidate retrieval, no RAG).}
+\label{tab:disc_prompt_format}
+\begin{tabular}{llccc}
+\toprule
+Method & Model & Params & \#Tokens & Acc.\ (\%) \\
+\midrule
+PnP & DeepSeek-R1 & 7B & 2.9K & 5.20 \\
+PnP & DeepSeek-R1 & 32B & 2.9K & 47.80 \\
+PnP & o3-mini & 200B & 2.9K & 69.92 \\
+PnP + candidates & DeepSeek-R1 & 7B & 2.9K & 9.00 \\
+PnP + candidates & DeepSeek-R1 & 32B & 2.9K & 32.50 \\
+PnP + candidates & Gemini-2.5-Flash & 5B & 2.9K & 29.50 \\
+PnP + candidates & Gemini-2.5-Pro & -- & 2.9K & 42.50 \\
+\textbf{DiSC-AMC} & DeepSeek-R1 & 7B & 1.3K & 33.50 \\
+\textbf{DiSC-AMC} & DeepSeek-R1 & 32B & 1.3K & 39.00 \\
+\textbf{DiSC-AMC} & Gemini-2.5-Flash & 5B & 1.3K & 45.50 \\
+\textbf{DiSC-AMC} & Gemini-2.5-Pro & -- & 0.9K & \textbf{51.00} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Discussion: Answering RQ2}
+\label{sec:disc_discussion}
+
+DiSC-AMC provides the dissertation's strongest evidence for Research Question 2 (RQ2): \textit{Can RF statistics and relevant examples be given to an LLM efficiently enough for useful, open-set AMC?} Two complementary results support a confident \textbf{yes, within bounds}. First, a QLoRA fine-tuned 7B model reaches 83.00\% in-distribution and 82.50\% OOD accuracy on SynthMod-10, matching or surpassing every supervised baseline evaluated, including DenoMAE2.0---demonstrating that symbolic, retrieval-augmented reasoning is not merely a cheaper substitute for supervised classification but can be competitive with it. Second, a training-free 7B model reaches 71.9\% accuracy at 0.5K tokens, exceeding a 200B proprietary model given 2.9K tokens of raw statistics (69.92\%)---demonstrating that \emph{prompt construction, not model scale, is the dominant driver of LLM-based AMC accuracy}. On the harder cross-dataset transfer to RadioML, DiSC-AMC amplifies a frozen or fine-tuned encoder's own head by up to 8$\times$, showing that reasoning can compensate for a weak or unadapted encoder, but only when the encoder's nearest neighbors remain informative: DenoMAE2.0's synthetic-trained embeddings, which excel in-distribution, retrieve poorly on RadioML, so the composition's ceiling is ultimately set by the quality of the RQ1 representation it retrieves over (Chapter~\ref{chap:denomae}, Chapter~\ref{chap:cdrf}). The one hard limit is extreme noise: below roughly $-30$ dB, constellation-based features of any kind collapse to chance, for both retrieval and final classification.
+
+\textbf{Connection to the Dissertation Framework:} Together, Plug-and-Play and DiSC-AMC demonstrate that the \textit{intelligent reasoning engine} of this dissertation's modular framework can be built economically: training-free when deployment cost dominates, or lightly fine-tuned when accuracy must match dedicated supervised encoders---in both cases at a small fraction of the parameter count of frontier LLMs. This validates the dissertation's central thesis that wireless foundation-model capabilities need not be built through massive isolated training, but can be assembled by strategically integrating pre-trained vision (RQ1, Chapters~\ref{chap:denomae}--\ref{chap:cdrf}) and language (RQ2) world knowledge. DiSC-AMC's retrieval stage is itself a direct composition of RQ1 and RQ2: it is the self-supervised encoder from Chapter~\ref{chap:denomae} that supplies the exemplars the LLM reasons over, making DiSC-AMC the dissertation's concrete demonstration that the framework's components compose rather than merely coexist. Section~\ref{sec:wireless_meta_task} (Chapter~\ref{chap:meta_task}) returns to this composition from the RQ3 (adaptation) side, testing whether Meta-Task's learnable regularization can further improve the DiSC-AMC pipeline on RadioML.
+
+Overall, this chapter represents a substantive step toward practical, open-set wireless reasoning with LLMs. The transition from Plug-and-Play to DiSC-AMC shows concretely how an initial proof-of-concept, once its cost bottleneck is diagnosed, can be redesigned into a deployment-realistic pipeline---while being explicit about where that pipeline's limits still lie.
 
 \FloatBarrier
 

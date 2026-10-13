@@ -13,104 +13,96 @@
 This dissertation has presented a three-stage framework for developing wireless foundation models, focusing on self-supervised representation learning, large language model (LLM)-based reasoning, and meta-learning for rapid adaptation. Our work makes the following primary contributions:
 
 \begin{enumerate}
-    \item \textbf{DenoMAE: Self-Supervised Multimodal Representation Learning (Chapter 4)}
-    We introduced DenoMAE, a novel self-supervised learning framework that learns robust and transferable representations from unlabeled wireless signals. By treating noise as an explicit modality and jointly processing time-domain IQ samples and constellation diagrams, DenoMAE achieves state-of-the-art performance with significantly less labeled data. This work addresses RQ1 and RQ5, demonstrating that multimodal self-supervised learning can produce powerful representations for wireless signals.
+    \item \textbf{DenoMAE and CDRF: Self-Supervised, Vision-Based Representation Learning (Chapters~\ref{chap:denomae}--\ref{chap:cdrf})}
+    DenoMAE is a self-supervised learning framework, co-developed with Atik Faysal (lead), that learns robust and transferable representations from unlabeled wireless signals by treating noise as an explicit modality and jointly processing time-domain IQ samples and constellation diagrams. The CageDroneRF (CDRF) benchmark complements it with large-scale, real-world over-the-air evidence (39 classes, 500+ GB of raw I/Q) that vision architectures---YOLO for detection, ResNet for hierarchical and open-set classification---transfer effectively to RF perception. Together these works address RQ1, establishing that image-based self-supervision gives label-efficient RF features (82.4\% on a shared 10-class benchmark; 0.986 mAP@0.5 on real drone spectrograms), with clear bounds: performance collapses under extreme noise ($-30$ dB) and transfers weakly, without adaptation, to an unseen dataset (RadioML).
 
-    \item \textbf{Plug-and-Play: LLM-Based White-Box Reasoning Classifier (Chapter 5)}
-    We proposed a novel framework that leverages the reasoning capabilities of large language models for training-free, open-set classification of wireless signals. This approach, which addresses RQ2, translates statistical signal features into natural language prompts, enabling LLMs to perform classification and provide interpretable decisions.
+    \item \textbf{Plug-and-Play and DiSC-AMC: LLM-Based Reasoning for Open-Set AMC (Chapter~\ref{chap:plugandplay})}
+    Plug-and-Play first demonstrated that a pre-trained LLM, given statistical signal summaries as text, can perform open-set modulation classification without wireless-specific training. \textbf{DiSC-AMC}~\cite{disc_amc}, this dissertation's central contribution to RQ2, resolves Plug-and-Play's token-efficiency bottleneck through feature discretization, self-supervised context retrieval, and candidate-space pruning: a QLoRA fine-tuned 7B model reaches 83.0\% in-distribution and 82.5\% out-of-distribution accuracy on a synthetic 10-class benchmark, surpassing all supervised baselines, while a training-free 7B configuration reaches 71.9\% accuracy at 0.5K tokens---exceeding a 200B-parameter baseline given 2.9K tokens of raw statistics. On cross-dataset transfer to RadioML, DiSC-AMC amplifies a frozen or fine-tuned encoder's own classification head by up to 8$\times$. Together, Plug-and-Play and DiSC-AMC provide the dissertation's affirmative answer to RQ2, bounded by the quality of the encoder whose embeddings the pipeline retrieves over.
 
-    \item \textbf{Meta-Task: Rapid Adaptation through Meta-Learning (Chapter 6)}
-    To address the challenge of rapid adaptation to new tasks, we introduced the Meta-Task framework, a method-agnostic approach to learnable regularization in few-shot learning. This work, which addresses RQ3, enables models to adapt to new modulation schemes with minimal labeled data, a critical capability for dynamic wireless environments.
-    
-    \item \textbf{Cross-Domain Validation (Chapter 7 \& 8)}
-    Through the analysis of our results, we have shown that the principles of our framework can be extended to cross-domain applications, such as the drone detection paper, which uses vision models for RF signal analysis. This addresses RQ4 and RQ5, demonstrating the potential for cross-modal understanding and knowledge transfer.
+    \item \textbf{Meta-Task: Rapid Adaptation through Meta-Learning (Chapter~\ref{chap:meta_task})}
+    We introduced Meta-Task, a method-agnostic approach to learnable regularization in few-shot learning, addressing RQ3. On vision few-shot benchmarks, Meta-Task delivers consistent, if uneven, gains (e.g., 65.4\%$\to$71.3\% for Prototypical Networks on Tiered-ImageNet 5-way 5-shot, converging within 20k episodes versus more than 50k without it). Tested directly as a wireless deployment through the DiSC-AMC pipeline on RadioML, however, Meta-Task gives \emph{no net gain} over plain fine-tuning (22.2\% vs.\ 23.0\%)---a robust null result confirmed under two independent protocol fixes. RQ3's answer is therefore \emph{partly} affirmative: the mechanism helps where the base learner's inductive bias is weak and the domain is in-distribution, but is not a substitute for a better representation under cross-dataset wireless transfer.
 \end{enumerate}
 
 \section{Key Findings}
-Our research has yielded several key findings that advance the state of the art in wireless signal analysis:
+Each research question is answered following the same structure: hypothesis, controlled evidence, a difficult finding, and a bounded answer.
+
 \begin{itemize}
-    \item \textbf{Answer to RQ1 (Image representations work):} Constellation diagrams are effective visual representations for wireless signals, enabling the use of powerful vision-based models.
-    \item \textbf{Answer to RQ2 (LLMs enable open-set):} Large language models can perform open-set classification of wireless signals, providing a path toward more flexible and intelligent radio systems.
-    \item \textbf{Answer to RQ3 (Meta-learning enables adaptation):} Meta-learning provides an effective mechanism for rapid adaptation to new tasks with minimal labeled data.
-    \item \textbf{Answer to RQ4 (Cross-domain transfer works):} Knowledge can be transferred from the computer vision domain to the wireless domain, as demonstrated by the use of YOLO for RF signal analysis.
-    \item \textbf{Answer to RQ5 (Bidirectional understanding exists):} There is evidence of bidirectional understanding between the signal and image domains, where signal models can understand images and vice versa.
+    \item \textbf{Answer to RQ1 (Represent)---yes, within bounds:} Image-based self-supervision (DenoMAE, Chapter~\ref{chap:denomae}) gives label-efficient RF features---82.4\% on a shared 10-class synthetic benchmark (+22.1 points over no pretraining at $-10$ dB) and 0.986 mAP@0.5 for real drone detection (CDRF, Chapter~\ref{chap:cdrf}). The bound is explicit: representations collapse to near-chance below roughly $-30$ dB, and features trained on synthetic constellations transfer weakly, without adaptation, to an unseen dataset (RadioML).
+    \item \textbf{Answer to RQ2 (Reason)---yes, with compact symbols and retrieved examples:} DiSC-AMC (Chapter~\ref{chap:plugandplay}) shows that a 7B LLM performs open-set AMC competitively with or better than dedicated supervised encoders (83.0\% in-distribution, 82.5\% out-of-distribution) when fine-tuned, and remains competitive training-free (71.9\% at 0.5K tokens, versus 69.92\% for a 200B model at 2.9K tokens). The bound: accuracy is only as good as the retrieval embedding it reasons over, and also collapses near $-30$ dB.
+    \item \textbf{Answer to RQ3 (Adapt)---partly:} Meta-Task's learnable regularization (Chapter~\ref{chap:meta_task}) helps few-shot vision benchmarks (e.g., +5.9 points for Prototypical Networks on Tiered-ImageNet) but gives no reliable gain on cross-dataset wireless AMC through the DiSC-AMC pipeline (22.2\% vs.\ 23.0\%, a robust null result). The lesson: on wireless transfer, the representation is the bottleneck, not the regularizer---directly connecting RQ3 back to RQ1.
 \end{itemize}
+
+\textbf{Composition.} The three answers are not independent: DiSC-AMC (RQ2) uses an RQ1 encoder's embeddings for retrieval inside its LLM reasoner, lifting RadioML accuracy up to 8$\times$ over the encoder alone---a concrete demonstration that the framework's components compose rather than merely coexist. The RQ3 wireless test, in turn, points back to RQ1: on a new dataset, representation quality limits accuracy more than adaptation strategy does.
 
 \section{Limitations}
-Despite the promising results, this work has several limitations that should be addressed in future research:
+Three limitations bound every result in this dissertation, each surfaced directly by the experiments rather than assumed in advance:
 \begin{itemize}
-    \item \textbf{Limited to 10-class datasets:} Our experiments were conducted on datasets with a limited number of modulation classes.
-    \item \textbf{Computational considerations:} The training of large models and the use of LLMs require significant computational resources.
-    \item \textbf{Real-world deployment challenges:} There is a gap between the performance of our models in a controlled lab environment and their potential performance in real-world scenarios with complex channel effects and hardware impairments.
+    \item \textbf{Extreme noise:} Image-based representations (DenoMAE, CDRF) and the retrieval they enable (DiSC-AMC) collapse to near-random accuracy at approximately $-30$ dB SNR, where constellation diagrams become effectively featureless. This is a shared failure mode across every vision-rooted component of the framework, not an isolated weakness of one method.
+    \item \textbf{Dataset transfer:} Encoders trained on synthetic AMC data (DenoMAE2.0, DINOv2) transfer weakly to the real-world RadioML benchmark without target-domain adaptation; DiSC-AMC's reasoning amplifies a weak or unadapted encoder but cannot substitute for a representation whose nearest neighbors are uninformative on the new dataset.
+    \item \textbf{Wireless adaptation:} Meta-Task gives no net gain on RadioML AMC (22.2\% vs.\ 23.0\%); its demonstrated gains are confined to in-distribution, vision few-shot benchmarks. Rapid, few-shot wireless adaptation therefore remains an open problem for future work, not a solved component of the framework.
+    \item \textbf{Scale and scope of validation:} Experiments are conducted primarily on 10- and 24-class synthetic/RadioML benchmarks plus one real-world drone RF benchmark (CDRF); broader modulation taxonomies, multi-antenna/MIMO scenarios, and hardware-in-the-loop deployment remain untested.
 \end{itemize}
+
+\section{Contributions and Authorship}
+\label{sec:authorship}
+
+Several works underlying this dissertation are collaborative, and academic integrity requires stating authorship plainly rather than letting the framework narrative blur it. Table~\ref{tab:authorship} lists, for each work used as evidence in this dissertation, the author's specific role.
+
+\begin{table}[htbp]
+\centering
+\caption{Authorship and role of each work used as evidence in this dissertation.}
+\label{tab:authorship}
+\small
+\begin{tabular}{p{0.28\textwidth}p{0.22\textwidth}p{0.17\textwidth}p{0.18\textwidth}}
+\toprule
+Work & Role & Venue & Used for \\
+\midrule
+Plug-and-Play AMC & First author & IEEE WOCC 2025 & RQ2 core \\
+DiSC-AMC & First author & IEEE Xplore; arXiv:2510.00316 & RQ2 core; RQ1+RQ2 composition \\
+Meta-Task & First author & arXiv:2402.18599 & RQ3 core \\
+CageDroneRF (CDRF) & Shared first author (with A. Faysal) & arXiv:2601.03302 & RQ1 real-world evidence \\
+DenoMAE & Co-author (A. Faysal first) & IEEE Commun. Letters 2025 & RQ1 representation \\
+DenoMAE2.0 & Co-author (A. Faysal first) & IEEE Trans. Commun.\ 74, 2026 & RQ1 representation; DiSC-AMC encoder \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+For DenoMAE and DenoMAE2.0 specifically: the core idea and primary contribution are Atik Faysal's; the author's role was experiment implementation and paper writing. This dissertation uses both works as the pre-trained representation that other chapters build on and compare against---never as a first-author claim. This distinction matters for assessing the dissertation's novel contribution: the three first-author works (Plug-and-Play, DiSC-AMC, Meta-Task) and the shared-first-author CDRF benchmark are what this dissertation claims as its own; DenoMAE and DenoMAE2.0 are evidence the dissertation builds on and is transparent about not having originated.
 
 \section{Future Research Directions}
-The foundation established in this dissertation opens several promising avenues for advancing wireless foundation models. We highlight three particularly impactful directions that build directly on our contributions:
+\label{sec:future_work}
 
-\subsection{DenoMAE 2.0: Hybrid Generative-Discriminative Learning}
+The framework validated in this dissertation leaves several directions open, some already probed with a first (negative) result rather than left purely speculative.
 
-DenoMAE 2.0 will address a fundamental limitation of the original framework: the lack of spatial awareness during masked reconstruction. The enhanced architecture will introduce a dual-objective paradigm that will combine traditional reconstruction with position-based patch classification, enabling simultaneous learning of global signal structure and fine-grained local patterns.
+\subsection{A First Fusion Attempt, and Why It Did Not Help}
 
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[width=0.85\linewidth]{FIGURES/denomae2/flow_con.png}
-    \caption{DenoMAE 2.0 architecture overview: The framework will extend masked autoencoding with a classification head that will treat each visible patch as a distinct class based on spatial position. This dual-objective approach will balance reconstruction loss for global feature learning with position-aware classification for capturing local signal patterns, and will yield more robust and transferable representations.}
-    \label{fig:denomae2_arch}
-\end{figure}
+The most natural integration test---layering Meta-Task's learnable regularization on top of the DiSC-AMC pipeline on RadioML---was already run (Section~\ref{sec:wireless_meta_task}) and gave no net gain (22.2\% vs.\ 23.0\% for plain fine-tuning). This is a useful negative result, not an unexplored opportunity: it shows that naively stacking the framework's adaptation module onto its reasoning module does not help when the underlying representation is the bottleneck. A more promising fusion direction, left untested here, is feeding Meta-Task-adapted \emph{encoder} features (rather than a frozen or vanilla fine-tuned DenoMAE2.0/DINOv2 backbone) into DiSC-AMC's retrieval stage, so that adaptation improves the exemplars being retrieved rather than only regularizing a classification head that DiSC-AMC's reasoning already bypasses.
 
-The core innovation will treat each visible (unmasked) patch as a distinct class determined by its spatial position, creating a position-aware learning objective. The combined loss function $\mathcal{L} = \lambda_{\text{rec}} \mathcal{L}_{\text{rec}} + \lambda_{\text{cls}} \mathcal{L}_{\text{cls}}$ will balance reconstruction quality with spatial discrimination. This design will encourage the encoder to develop representations that are simultaneously reconstructive (preserving signal structure) and discriminative (capturing position-specific patterns), and will lead to improved generalization across SNR conditions and enhanced transfer learning to out-of-distribution datasets.
+\subsection{Vision-Language Models for Richer Reasoning}
 
-Key research directions will include: (1) investigating optimal loss weighting strategies across varying SNR regimes; (2) extending to hierarchical position classification that will capture multi-scale spatial relationships; (3) integrating with Meta-Task's few-shot adaptation mechanisms; and (4) evaluating whether position-aware pretraining will transfer beyond modulation classification to channel estimation, interference detection, and spectrum sensing tasks.
+DiSC-AMC currently reasons over discretized \emph{statistics} of the constellation diagram, discarding the image itself after the self-supervised encoder reduces it to an embedding. A vision-language model (VLM) that reasons jointly over the constellation image and the discretized context could recover information the current pipeline discards---for instance, visual symmetry or point-cloud density patterns that are only coarsely captured by moment- and cumulant-based statistics. This is a natural next step for RQ2 that keeps the framework's modularity: the VLM would replace only the LLM reasoning stage, not the retrieval or discretization stages.
 
-\subsection{DiSC-AMC: Token- and Parameter-Efficient LLM Reasoning}
+\subsection{Open Gaps Identified During Evaluation}
 
-While Plug-and-Play (Chapter~\ref{chap:plugandplay}) has demonstrated the feasibility of LLM-based wireless classification, practical deployment will face two critical challenges: verbose floating-point feature representations that will consume excessive context windows, and large model requirements that will strain computational budgets. DiSC-AMC~\cite{disc_amc} will address these limitations through a three-stage pipeline designed for resource-constrained deployments.
-
-\begin{figure*}[!t]
-\centering
-\includegraphics[width=0.9\textwidth]{FIGURES/disc/method.png}
-\caption{Planned DiSC-AMC framework. (1) Signal statistics such as cumulants (c1, c2, c3, ...) will be computed and discretized into bins, represented as different shapes. (2) Exemplars will be pruned using a lightweight top-$k$ shortlisting classifier. (3) The prompt will be structured for efficient, constrained decoding by the LLM.}
-\label{fig:pipeline}
-\end{figure*}
-
-\textbf{Stage 1---Statistical Discretization:} Continuous cumulants and spectral features will be mapped into symbolic bins rather than lengthy decimal strings. This discretization strategy will focus LLMs on qualitative statistical patterns rather than noisy numerical precision, aligning wireless signal representation with how foundation models process natural language tokens. The approach will reduce feature verbosity while preserving discriminative information.
-
-\textbf{Stage 2---Dynamic Exemplar Pruning:} A lightweight vision classifier will analyze constellation diagrams to identify the top-$k$ most probable modulation classes, dramatically reducing the context window by including only relevant exemplars. This prefiltering step will be modular and swappable—implementations may use deterministic rules, alternative vision models, or training-free heuristics depending on deployment constraints.
-
-\textbf{Stage 3---Constrained Prompting:} Queries will be reformulated from open-ended classification to a structured multiple-choice format, enforcing label-only predictions and enabling efficient decoding. Combined with selective feature inclusion based on information value, this will yield prompts that are simultaneously compact and interpretable.
-
-The framework will demonstrate that training-free LLM-based classification can operate at practical computational scales with order-of-magnitude reductions in both model size and context length. Future research will include: (1) applying discretization strategies to other statistical wireless features (channel state information, beamforming coefficients); (2) investigating hybrid architectures where learned representations from DenoMAE 2.0 will replace hand-crafted statistical features; (3) extending to multi-task scenarios (joint modulation classification, SNR estimation, and interference detection); and (4) developing adaptive binning strategies that will adjust discretization granularity based on signal conditions.
-
-\subsection{Synergistic Integration: Toward Practical Wireless Foundation Models}
-
-The most promising future direction lies in the principled integration of DenoMAE 2.0 and DiSC-AMC within the dissertation's modular framework. DenoMAE 2.0 provides robust, noise-invariant representations through self-supervised learning; DiSC-AMC enables efficient, interpretable reasoning through token-optimized LLM prompting; and Meta-Task (Chapter~\ref{chap:meta_task}) facilitates rapid adaptation to novel deployment scenarios. Together, these components address complementary aspects of the wireless foundation model challenge:
-
+Several specific, scoped gaps were identified while running the DiSC-AMC and Meta-Task evaluations and are left as concrete follow-up work rather than folded into the main results:
 \begin{itemize}
-    \item \textbf{Representation Learning:} DenoMAE 2.0's dual-objective training produces features that are simultaneously reconstructive (preserving signal structure) and discriminative (capturing class-specific patterns), ideal for both unsupervised pretraining and supervised fine-tuning.
-    
-    \item \textbf{Efficient Reasoning:} DiSC-AMC's symbolic discretization and dynamic pruning reduce LLM deployment costs by an order of magnitude, making foundation model inference practical for edge devices and spectrum monitoring systems.
-    
-    \item \textbf{Rapid Adaptation:} Meta-Task's learnable regularization enables few-shot specialization to new modulation schemes or channel conditions with 5--10 labeled examples, avoiding costly retraining.
-    
-    \item \textbf{Interpretability:} The natural language interface provided by DiSC-AMC complements DenoMAE 2.0's visual reconstructions, offering operators both symbolic explanations and signal-level diagnostics.
+    \item \textbf{Shots-per-class sweep:} The sensitivity of DiSC-AMC and Plug-and-Play to the \emph{number} of in-context examples per class (1 / 2 / 4 shots) was not swept; only the choice of \emph{which} examples to retrieve (FAISS vs.\ centroid) was ablated (Section~\ref{sec:disc_ablations}).
+    \item \textbf{A fair non-generative-model test:} Preliminary tests substituting a non-generative scoring model (``Jev'') for the DiSC-AMC prompt surfaced several confounds---a prompt not tailored for non-generative decoding, criteria that cannot carry query-specific evidence, and a bug that sent null option descriptions in default runs. A fair comparison requires query-specific criteria and repeated runs at larger sample sizes than the 200--240 queries tested here.
+    \item \textbf{Explicit SNR-aware prompting:} Performance degrades gracefully but monotonically with SNR across every LLM-based configuration; none of the current prompts explicitly condition on an SNR estimate, which could let the LLM calibrate its own confidence rather than reasoning as if every query were equally reliable.
 \end{itemize}
-
-A concrete integration pathway would: (1) pretrain DenoMAE 2.0 on diverse unlabeled wireless data to learn universal representations; (2) fine-tune the encoder with Meta-Task for few-shot adaptation to deployment-specific classes; (3) extract statistical features from DenoMAE 2.0's reconstructed (denoised) signals; (4) apply DiSC-AMC's discretization and pruning pipeline to these features; (5) use constrained LLM prompting for final classification with interpretable rationales. This end-to-end system would achieve the dissertation's vision: a cost-effective, modular wireless foundation model that approximates world knowledge through strategic component integration rather than massive monolithic training.
 
 \subsection{Additional Promising Directions}
 
-Beyond these primary extensions, several secondary avenues warrant exploration:
+Beyond these, several secondary avenues warrant exploration:
 
 \begin{itemize}
-    \item \textbf{Scaling to Broader Modulation Taxonomies:} Extending pretraining to 50+ modulation schemes, including emerging waveforms (OTFS, NOMA) and legacy standards (analog FM/AM), to build truly general-purpose encoders.
-    
-    \item \textbf{Multi-Task Foundation Models:} Training unified architectures that perform modulation classification, SNR estimation, channel equalization, and interference detection simultaneously, leveraging shared representations across tasks.
-    
-    \item \textbf{Real-Time Edge Deployment:} Optimizing the integrated framework for FPGA and embedded GPU platforms, including quantization-aware training, pruning, and knowledge distillation to meet latency constraints (<10 ms inference) for cognitive radio applications.
-    
-    \item \textbf{Adversarial Robustness:} Investigating whether DenoMAE 2.0's position-aware learning and DiSC-AMC's symbolic abstractions provide inherent robustness to adversarial perturbations and spoofing attacks in contested electromagnetic environments.
-    
-    \item \textbf{Cross-Domain Transfer:} Evaluating whether representations learned from communications signals (as in this dissertation) transfer to radar, satellite, or biomedical RF applications, demonstrating true foundation model generality.
+    \item \textbf{Scaling to Broader Modulation Taxonomies:} Extending pretraining and evaluation to 50+ modulation schemes, including emerging waveforms (OTFS, NOMA) and legacy standards (analog FM/AM), to build truly general-purpose encoders and reasoning pipelines.
+
+    \item \textbf{Multi-Task Foundation Models:} Training or prompting unified pipelines that perform modulation classification, SNR estimation, channel equalization, and interference detection simultaneously, leveraging shared representations across tasks.
+
+    \item \textbf{Real-Time Edge Deployment:} Quantifying the latency and memory footprint of the training-free DiSC-AMC configuration (5B--7B models, 0.5--1.3K-token prompts) on embedded GPU or FPGA targets, where the token-efficiency gains demonstrated here would translate directly into deployment feasibility.
+
+    \item \textbf{Cross-Domain Transfer:} Evaluating whether the representations and reasoning pipelines developed for AMC and drone detection in this dissertation transfer to radar, satellite, or biomedical RF applications, testing the generality claimed by the foundation-model framing.
 \end{itemize}
 
 \section{Closing Remarks}

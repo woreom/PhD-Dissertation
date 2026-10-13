@@ -263,7 +263,7 @@ A rigorous mathematical proof is more challenging for FSL methods beyond MAML. H
 
 \section{Experiments and Results}\label{sec:results}
 
-We validate Meta-Task on standard computer vision benchmarks to demonstrate its general applicability and enable comparison with existing FSL methods. This validation establishes the framework's effectiveness before wireless-specific deployment, which is discussed as future work in Chapter~\ref{chap:concl}. The principles demonstrated here—rapid adaptation with minimal data—transfer directly to wireless applications where acquiring labeled signals is expensive.
+We validate Meta-Task on standard computer vision benchmarks to demonstrate its general applicability and enable comparison with existing FSL methods. This validation establishes the framework's effectiveness on vision few-shot tasks; Section~\ref{sec:wireless_meta_task} then tests directly whether the same mechanism transfers to a wireless AMC deployment.
 
 In this section, we conduct comprehensive experiments to validate the effectiveness of our proposed {Meta-Task} framework in enhancing generalization and mitigating overfitting in few-shot learning. Our objectives are to: 
 \begin{enumerate} 
@@ -415,12 +415,52 @@ Figure~\ref{fig:5} illustrates that our method achieves higher accuracy more qui
 To address concerns regarding implementation specifics, we provide detailed information about the hyperparameters, training times, and autoencoder architectures in Section~\ref{sec:exp_details}. We also conducted ablation studies to analyze the effect of different autoencoder architectures and the use of multiple autoencoders per task. The results indicate that while deeper autoencoders can provide marginal performance gains, the computational overhead increases significantly. Therefore, a single, appropriately sized autoencoder strikes a good balance between performance and efficiency.
 
 
+\section{Wireless Validation: Meta-Task for AMC on RadioML}
+\label{sec:wireless_meta_task}
+
+The vision benchmarks above establish that Meta-Task's learnable regularization helps few-shot generalization when the base learner has a weak inductive bias. This section asks the question those benchmarks cannot answer directly: \textit{does the same auxiliary task help when the backbone is a wireless signal encoder, the deployment is cross-dataset, and classification runs through the DiSC-AMC pipeline of Chapter~\ref{chap:plugandplay}?}
+
+\subsection{Experimental Design}
+
+We evaluate on RadioML 2018.01a (24 classes, five SNR levels from $-20$ to $+20$ dB), using the full DiSC-AMC pipeline (DeepSeek-R1-Distill-Qwen-7B reasoning over discretized, retrieval-augmented exemplars; Section~\ref{sec:disc_amc}) as the fixed downstream endpoint, so that any effect of the auxiliary task is measured on the metric that matters for the dissertation's RQ2 contribution, not on an encoder's classification head in isolation. We compare three configurations that isolate the Task-Decoder's effect while holding the encoder backbone (DenoMAE2.0) and the reasoning pipeline fixed:
+\begin{description}
+    \item[(A) DenoMAE2.0 baseline] the encoder frozen, only a classification head trained, as published in Chapter~\ref{chap:plugandplay}'s DiSC-AMC Scenario III results.
+    \item[(B) DenoMAE2.0, fine-tuned] the encoder updated end-to-end on RadioML, with no auxiliary task.
+    \item[(C) DenoMAE2.0 + Meta-Task] identical to (B), with the Task-Decoder's reconstruction loss added on a separate optimizer.
+\end{description}
+The main comparison is \textbf{C vs.\ B}: the two configurations share the same backbone and fine-tuning protocol, differing only in whether the auxiliary task is present.
+
+Two protocol fixes were necessary for this comparison to be fair, both motivated by an earlier result that did not survive scrutiny. An initial run with a \emph{frozen} encoder (Meta-Task's auxiliary loss added only to the classification head) showed a +4.6 percentage point gain at $-20$ dB. This gain disappeared once the comparison was corrected: \textbf{Fix 1} trains both the Task-Decoder and the vanilla fine-tuning baseline with real, matched end-to-end fine-tuning of the encoder (matching the protocol used for DINOv2 elsewhere in Chapter~\ref{chap:plugandplay}), rather than leaving the encoder frozen only for the Task-Decoder arm; \textbf{Fix 2} places the auxiliary reconstruction loss on its own optimizer with a small learning rate ($10^{-6}$), as in the original Meta-Task implementation (Section~\ref{sec:approach}), rather than folding it into the main loss via a scalar weight $\lambda$, which had been inflating its apparent effect.
+
+\subsection{Results}
+
+\begin{table}[htbp]
+\centering
+\caption{Wireless validation: DiSC-AMC pipeline accuracy on RadioML 2018.01a (24 classes), averaged over five SNR levels ($-20$ to $+20$ dB).}
+\label{tab:metatask_wireless}
+\begin{tabular}{lc}
+\toprule
+Configuration & Mean Accuracy (\%) \\
+\midrule
+(A) DenoMAE2.0, frozen encoder & 21.5 \\
+(B) DenoMAE2.0, fine-tuned, no auxiliary task & 23.0 \\
+(C) DenoMAE2.0, fine-tuned + Meta-Task & 22.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:metatask_wireless} reports the result under the corrected protocol: \textbf{(C) 22.2\% vs.\ (B) 23.0\%}---Meta-Task's auxiliary task gives \emph{no net gain} over plain fine-tuning on this cross-dataset wireless AMC task, and is marginally, not significantly, below it. The one effect that held up under both protocol fixes is the end-to-end fine-tuning itself: moving from a frozen encoder to a fine-tuned one (A$\to$B) improves mean accuracy by +1.5 points (21.5\%$\to$23.0\%), confirming that adapting the backbone to the target domain matters, even though adding Meta-Task's regularization on top of that adaptation does not help further. For reference, DiSC-AMC with a fine-tuned DINOv2 backbone (Chapter~\ref{chap:plugandplay}, Table~\ref{tab:disc_scenario3}) still reaches 76.25\% at $+20$ dB on the same benchmark---an order of magnitude above any DenoMAE2.0 configuration here---underscoring that representation quality, not the regularizer, is the binding constraint on this dataset.
+
+\subsection{Discussion: A Bounded, Honest Null Result}
+
+We report this as a \textbf{robust null result}: both plausible objections to the initial positive finding---an unfair frozen-encoder comparison and an improperly weighted auxiliary loss---were checked explicitly, and neither reversal flips the conclusion. This matters for two reasons. First, it demonstrates the value of adversarial self-checking of promising early results before they are reported as a contribution; the original +4.6-point frozen-encoder result would have overstated Meta-Task's wireless applicability had it not been re-examined under a fair protocol. Second, it sharpens the dissertation's account of \emph{why} Meta-Task helps where it helps: Section~\ref{sec:results} showed its largest gains on metric learners with a weak inductive bias (Prototypical Networks) applied to within-domain few-shot vision tasks; here, the task is instead cross-dataset transfer (SynthMod-10-trained representations evaluated on RadioML), where Section~\ref{sec:disc_discussion} already identified the self-supervised \emph{representation} itself, not the classifier's regularization, as the bottleneck. A learnable auxiliary task cannot compensate for an encoder whose embeddings do not retrieve informative neighbors on the target dataset. This connects directly back to RQ1 (Chapters~\ref{chap:denomae}--\ref{chap:cdrf}): on wireless cross-dataset transfer, representation quality dominates regularization.
+
 \section{Conclusion}\label{sec:meta_tasks_conclusion}
 
 
 In this paper, we introduced Meta-Task, a method-agnostic framework that treats regularization as a learnable task for few-shot learning. By integrating an autoencoder-based Task-Decoder directly within the meta-learning optimization, our approach provides continuous, unsupervised regularization that prevents overfitting and improves generalization. Extensive experiments across multiple datasets (Mini-ImageNet, Tiered-ImageNet, FC100) and meta-learning methods (Prototypical Networks, MAML, MetaOptNet, P$>$M$>$F) demonstrate consistent improvements in accuracy, convergence speed, and cross-domain generalization.
 
-\textbf{Connection to the Dissertation Framework:} Meta-Task addresses a critical gap in wireless foundation models: rapid adaptation to new scenarios with minimal labeled data. The ability to achieve 4.3 percentage point improvements with only 5-10 examples validates the feasibility of cost-effective deployment across diverse wireless environments. This work complements DenoMAE's efficient representation learning (Chapter~\ref{chap:denomae}), benefits from CDRF's diverse evaluation tasks (Chapter~\ref{chap:cdrf}), and can enhance the Plug-and-Play LLM's adaptability (Chapter~\ref{chap:plugandplay}). Meta-Task's method-agnostic design enables integration with various architectures, making it a practical adaptation layer for the modular wireless foundation model framework. Together with the other contributions, Meta-Task demonstrates that wireless foundation models need not require massive-scale pretraining or extensive labeled data for each deployment scenario, but can economically adapt through meta-learning.
+\textbf{Connection to the Dissertation Framework:} Meta-Task provides a \emph{partial} answer to Research Question 3 (RQ3): \textit{Can a learnable auxiliary task improve generalization when only a few labeled examples exist?} On vision few-shot benchmarks, the answer is yes: Prototypical Networks improve from 65.4\% to 71.3\% on Tiered-ImageNet 5-way 5-shot, reaching the baseline's best accuracy in under 20k episodes versus more than 50k without the Task-Decoder, with consistent (if uneven) gains across MAML, MetaOptNet, and P$>$M$>$F. On the wireless deployment tested directly in Section~\ref{sec:wireless_meta_task}, however, Meta-Task gives no net gain over plain fine-tuning on cross-dataset RadioML AMC through the DiSC-AMC pipeline (22.2\% vs.\ 23.0\%). The lesson this bounded result supports is that \emph{on wireless cross-dataset transfer, the representation is the bottleneck, not the regularizer}: Meta-Task's adaptation layer is most valuable when the base learner's inductive bias is weak and the domain is in-distribution, and is not a substitute for a better encoder (Chapters~\ref{chap:denomae}--\ref{chap:cdrf}) when the encoder itself fails to transfer. This work complements DenoMAE's representation learning (Chapter~\ref{chap:denomae}), benefits from CDRF's diverse evaluation tasks (Chapter~\ref{chap:cdrf}), and was tested directly as a fine-tuning addition to the Plug-and-Play/DiSC-AMC pipeline (Chapter~\ref{chap:plugandplay}). Meta-Task's method-agnostic design keeps it a practical adaptation layer for in-distribution few-shot scenarios within the modular wireless foundation model framework, even though it is not, by itself, a solution to cross-dataset representation gaps.
 
 % In this paper, we introduced the {\textbf{Meta-Task}} framework, a novel and method-agnostic approach for regularization in FSL. By using Meta-Tasks as auxiliary tasks, our framework effectively addresses overfitting in FSL models. We provided theoretical justification for our method, showing that it can converge to global optima that generalizes well across different tasks.
 
