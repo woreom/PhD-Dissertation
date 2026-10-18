@@ -42,7 +42,7 @@ Overall, this work not only simplifies modulation classification but also sets t
 \section{Theoretical Background}
 \label{sec:back}
 
-The theoretical foundations of higher-order statistics and cumulants that underpin our approach are presented in Chapter~\ref{chap:background}, Section~\ref{sec:higher_order_stats}. These statistical features capture essential signal characteristics and enable effective representation in natural language prompts for LLM-based classification.
+Plug-and-Play rests on classical statistical features of the received signal. The central moments of a signal summarize the shape of its amplitude distribution, and $k$-statistics are the minimum-variance unbiased estimators of its cumulants. Cumulants of order higher than two vanish for Gaussian noise, so they suppress additive Gaussian noise while retaining structure that depends on the modulation, and fourth-order cumulants in particular take different values for BPSK, QPSK, and QAM constellations~\cite{swami2000hierarchical}. These features are compact and interpretable, which is why classical feature-based AMC used them, and they can be written as short numeric descriptions that a language model can read as text.
 
 \section{Method}
 \label{sec:meth}

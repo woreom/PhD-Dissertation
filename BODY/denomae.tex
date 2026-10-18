@@ -27,20 +27,20 @@ Building on recent advancements, we adapt these techniques and present DenoMAE, 
 
 Within the broader framework of this dissertation, DenoMAE serves as the foundational representation learning component. While Chapter~\ref{chap:plugandplay} addresses training-free classification through LLMs and Chapter~\ref{chap:meta_task} enables rapid adaptation, DenoMAE provides the robust feature encoder that learns universal signal representations from minimal labeled data. This modular approach demonstrates that wireless foundation models need not follow the massive-scale paradigm of vision and language models, but can achieve strong performance through efficient self-supervised pretraining.
 
-Our contributions to DenoMAE are threefold:
+\textbf{Attribution.} DenoMAE and its successor DenoMAE2.0 (Section~\ref{sec:denomae2}) are co-authored works led by Atik Faysal~\cite{faysal2025denomae,faysal2025denomae20improvingdenoisingmasked}: the core idea and the main contribution are his, and the author's part was experiment implementation and paper writing. This chapter therefore presents them as the self-supervised representation that the rest of the dissertation builds on and is compared against, not as first-author claims. The dissertation's own first-author contributions begin with Chapter~\ref{chap:plugandplay}, and CageDroneRF (Chapter~\ref{chap:cdrf}) is shared first-author work.
+
+The DenoMAE paper makes three contributions:
 
 \begin{itemize} 
 \item We propose a novel multimodal paradigm that incorporates noise as an additional modality, enabling more effective pretraining on modulation signals and enhancing model resilience to noise. 
 \item We demonstrate that our pre-trained model achieves significant improvements in classification accuracy under low SNR conditions, with accuracy gains of up to 22.1\% over non-pre-trained models. 
-\item Our approach outperforms traditional methods, achieving superior results while requiring only one-tenth of the unlabeled data for pretraining and one-third of the labeled data for fine-tuning, underscoring its efficiency and scalability for real-world applications. 
+\item It reaches competitive accuracy while using one-tenth of the unlabeled data for pretraining and one-third of the labeled data for fine-tuning relative to the cited baselines (a descriptive comparison across differing protocols, Table~\ref{compare}; the matched comparison is in Section~\ref{sec:denomae_samedata}), which underscores its data efficiency. 
 \end{itemize}
 
-\textbf{Framework Position and Research Questions:} Within the dissertation's modular framework for wireless foundation models, DenoMAE serves as the critical representation learning component, directly addressing \textbf{RQ1}: \textit{Can vision-based, self-supervised learning effectively transfer world knowledge to the wireless domain?} By treating wireless signals as images (constellation diagrams) and applying masked autoencoding—a technique proven successful in computer vision \cite{he2021mae}—DenoMAE demonstrates successful cross-modal knowledge transfer. The novel inclusion of noise as an explicit modality enables the encoder to learn robust, denoised representations from minimal labeled data (80\% reduction), validating that vision transformers can approximate world knowledge for wireless signals. This efficient encoder provides the feature extraction backbone that complements the LLM-based reasoning engine (Chapter~\ref{chap:plugandplay}) and enables the rapid adaptation mechanisms of Meta-Task (Chapter~\ref{chap:meta_task}). Together with CDRF's cross-modal validation (Chapter~\ref{chap:cdrf}), DenoMAE establishes that cost-effective wireless foundation models can be built through strategic modular design rather than massive isolated training.
+\textbf{Framework Position and Research Questions:} Within the dissertation's modular framework for wireless foundation models, DenoMAE serves as the representation learning component, addressing \textbf{RQ1}: \textit{Can vision-based, self-supervised learning effectively transfer world knowledge to the wireless domain?} By treating wireless signals as images (constellation diagrams) and applying masked autoencoding \cite{he2021mae}, DenoMAE and DenoMAE2.0 carry vision-based self-supervision into the wireless domain, and the noise-as-modality design lets the encoder learn denoised representations from only 1,000 labeled samples. The answer developed in this chapter is \emph{yes, within bounds}: pretraining clearly helps on matched data and at moderate noise, but the representation collapses at extreme noise and transfers weakly to a new dataset (Section~\ref{sec:denomae_limits}). Together with CDRF's evidence on real RF captures (Chapter~\ref{chap:cdrf}), this chapter supplies the representation on which the reasoning (Chapter~\ref{chap:plugandplay}) and adaptation (Chapter~\ref{chap:meta_task}) chapters build, and whose limits those chapters in turn expose.
 
 
 \section{Related Work}
-
-For a comprehensive survey of modulation classification and multisensory masked modeling, see Chapter~\ref{chap:background}, Section~\ref{sec:related_work}. Here, we situate DenoMAE within that literature.
 
 DenoMAE builds on masked autoencoders (MAE) \cite{he2021mae} and recent progress in multimodal pretraining \cite{bachmann2022multimae}. Prior AMC work has largely focused on single-modality pipelines like CNN classifiers \cite{peng2017modulation}, transformer backbones \cite{kong2023transformer}, or handcrafted features but often trained and evaluated at fixed SNRs. In contrast, we treat noise as a first-class modality. This design encourages the encoder to disentangle signal structure from channel effects during pretraining, yielding features that transfer more reliably across SNRs and channel conditions. Empirically, it reduces labeled-data requirements while improving low-SNR accuracy, addressing a long-standing robustness gap in AMC.
 
@@ -54,7 +54,7 @@ DenoMAE consists of four primary components: input embedding, encoder, shared la
 
 \subsubsection{Input Embedding}
 
-For each modality $m \in {1, ..., n}$, we represent the input as a C-channel image $X_m \in \mathbb{R}^{C \times H \times W}$. We divide each image into non-overlapping patches of size $p \times p$, resulting in $N = (H/p)^2$ patches per modality. Each patch is flattened and linearly projected to a $D$-dimensional embedding space:
+For each modality $m \in \{1, \dots, n\}$, we represent the input as a C-channel image $X_m \in \mathbb{R}^{C \times H \times W}$. We divide each image into non-overlapping patches of size $p \times p$, resulting in $N = (H/p)^2$ patches per modality. Each patch is flattened and linearly projected to a $D$-dimensional embedding space:
 $$E_m = [e^m_1, ..., e^m_N] + E_{pos}, \quad e^m_i \in \mathbb{R}^D$$
 where $E_{pos}$ represents learnable positional embeddings.
 
@@ -73,7 +73,7 @@ $$Z = [Z_1; ...; Z_5]$$
 \subsubsection{Decoder}
 
 The decoder $f_{dec}$ reconstructs the masked patches for all modalities simultaneously. It takes the shared latent representation $Z$ as input and processes it through a series of transformer blocks. The output is then split into modality-specific representations and projected back to the original patch space:
-$$\hat{X}m = f{proj_m}(f_{dec}(Z))$$
+$$\hat{X}_m = f_{\mathrm{proj}_m}(f_{dec}(Z))$$
 where $f_{proj_m}$ is a modality-specific projection layer.
 
 \subsubsection{Loss Function}
@@ -81,7 +81,7 @@ where $f_{proj_m}$ is a modality-specific projection layer.
 We employ a multi-modal reconstruction loss that combines individual losses for each modality:
 $$\mathcal{L} = \sum_{m=1}^5 w_m \mathcal{L}_m$$
 where $w_m$ is the weight for modality $m$, and $\mathcal{L}_m$ is the reconstruction loss for that modality. We use the mean squared error (MSE) as the reconstruction loss:
-$$\mathcal{L}m = \frac{1}{|\mathcal{M}m|} \sum{i \in \mathcal{M}m} | \hat{X}{m,i} - X{m,i} |_2^2$$
+$$\mathcal{L}_m = \frac{1}{|\mathcal{M}_m|} \sum_{i \in \mathcal{M}_m} \| \hat{X}_{m,i} - X_{m,i} \|_2^2$$
 
 
 \section{Experimental Setup}
@@ -94,7 +94,7 @@ Constellation diagrams offer a more informative approach to modulation classific
 
 \subsection{Parameters in Sample Generation} %Dataset description add table
 
-The dataset comprises signals from ten modulation formats, each originally of length $L_0 = 1024$. To conform to the transformer's input dimensions, signals undergo a two-step preprocessing: (1) reshaping to $\mathbf{S}_1 \in \mathbb{R}^{32 \times 32}$, and (2) interpolation to $\mathbf{S}2 \in \mathbb{R}^{224 \times 224}$. For formats with $L_0 > 1024$ (e.g., $L_\text{GMSK} = 8196$), signals are initially downsampled to $L_0$. To match the three-channel structure of constellation images $\mathbf{I} \in \mathbb{R}^{3 \times 224 \times 224}$, $\mathbf{S}_2$ is replicated across three channels, yielding $\mathbf{S}_3 \in \mathbb{R}^{3 \times 224 \times 224}$. All signals are sampled at $f_s = 200$ kHz, ensuring consistency across modulation formats.
+The dataset comprises signals from ten modulation formats, each originally of length $L_0 = 1024$. To conform to the transformer's input dimensions, signals undergo a two-step preprocessing: (1) reshaping to $\mathbf{S}_1 \in \mathbb{R}^{32 \times 32}$, and (2) interpolation to $\mathbf{S}_2 \in \mathbb{R}^{224 \times 224}$. For formats with $L_0 > 1024$ (e.g., $L_\text{GMSK} = 8196$), signals are initially downsampled to $L_0$. To match the three-channel structure of constellation images $\mathbf{I} \in \mathbb{R}^{3 \times 224 \times 224}$, $\mathbf{S}_2$ is replicated across three channels, yielding $\mathbf{S}_3 \in \mathbb{R}^{3 \times 224 \times 224}$. All signals are sampled at $f_s = 200$ kHz, ensuring consistency across modulation formats.
 
 \begin{figure}[htbp]
     \centering
@@ -221,15 +221,70 @@ Our ablation study on modality impact, detailed in Table \ref{modulations}, reve
 
 % Comparative analysis against existing approaches (Table III) positions DenoMAE as a highly efficient and effective solution. Our model achieves 83.5\% accuracy using only 10,000 pretraining samples, outperforming previous methods while using significantly less data, 80x fewer samples than AlexNet, 10x fewer than NMformer, and 8x fewer than CNN-AMC. Notably, DenoMAE maintains this superior performance across 10 classes, compared to fewer classes in competing methods, demonstrating both data efficiency and broader generalization capability. These results establish DenoMAE as a state-of-the-art approach that achieves superior performance with substantially reduced data requirements while handling a more comprehensive range of modulation classes.
 
-In Table \ref{compare}, we demonstrate the superior performance of DenoMAE against existing modulation classification approaches through comprehensive empirical evaluation. Our method achieves state-of-the-art accuracy of 83.5\% using only 10,000 pretraining and 1,000 fine-tuning samples, representing a dramatic reduction in data requirements compared to previous methods (e.g., 80× fewer samples than AlexNet, 10.7× fewer than NMformer). Notably, DenoMAE maintains robust performance across challenging SNR conditions, achieving 77.50\% accuracy even at -10 dB SNR, while handling a broader set of 10 modulation classes compared to methods like CNN-AMC and DL-GRF which only classify 4 classes. This performance significantly outpaces existing approaches, with improvements of up to 33.1\% over CNN-AMC (50.40\%) and 24.5\% over DL-GRF (59\%) under comparable or more challenging conditions, demonstrating DenoMAE's exceptional efficiency and generalization capabilities in modulation classification tasks.
+Table~\ref{compare} places DenoMAE next to published modulation classification results as literature context. It is not a controlled comparison: the entries differ in SNR, number of classes, and training and evaluation protocols, so its accuracy column cannot rank the methods. What it does show is data scale: DenoMAE reaches 83.5\% at 0.5 dB and 77.50\% at $-10$ dB on 10 classes using 10,000 unlabeled pretraining samples and 1,000 labeled fine-tuning samples, against hundreds of thousands of samples for some of the listed methods (for example, 80 times fewer than the 800,000 training samples of AlexNet). The matched comparison on identical data, SNR range, and classes is given in Section~\ref{sec:denomae_samedata}.
 
 \subsection{Cross-Framework Validation}
 
-The learned representations from DenoMAE demonstrate strong transferability across the dissertation's framework. In Chapter~\ref{chap:cdrf}, we further validate DenoMAE's vision-based approach through RF drone detection, where representing signals as images enables successful transfer of computer vision models (YOLOv8, YOLOv11) to wireless tasks. This cross-validation confirms that the image-based signal representation and self-supervised pretraining strategy generalize beyond modulation classification. Additionally, the robust features learned by DenoMAE can serve as inputs to the statistical feature extraction pipeline in the Plug-and-Play LLM framework (Chapter~\ref{chap:plugandplay}), where pre-denoised constellation diagrams improve cumulant computation accuracy. The encoder's ability to learn from minimal labeled data (1,000 samples) aligns with Meta-Task's few-shot adaptation paradigm (Chapter~\ref{chap:meta_task}), suggesting potential synergies in combining self-supervised pretraining with meta-learning for even greater data efficiency.
+The representation from this chapter is reused elsewhere in the dissertation, and its behavior there is part of the evidence for RQ1. In Chapter~\ref{chap:cdrf}, the vision-based approach is tested on real RF captures, where pretrained vision architectures (YOLO, ResNet) operate on spectrograms. In Chapter~\ref{chap:plugandplay}, DenoMAE2.0 is evaluated as an alternative retrieval backbone for DiSC-AMC; it is strong in distribution but is outperformed by a generic DINOv2 encoder on RadioML (Section~\ref{sec:rq1_meets_rq2}). Chapter~\ref{chap:meta_task} tests whether adding Meta-Task to a fine-tuned DenoMAE2.0 helps on RadioML, and it does not (Section~\ref{sec:wireless_meta_task}). Section~\ref{sec:denomae_limits} collects these limits.
 
+
+\section{DenoMAE2.0: Adding Local Patch Classification}
+\label{sec:denomae2}
+
+DenoMAE's pretext task is purely generative: reconstruct the masked patches. DenoMAE2.0~\cite{faysal2025denomae20improvingdenoisingmasked} adds a discriminative objective alongside the reconstruction. As Figure~\ref{fig:denomae2_arch} shows, the encoder's output for each visible (unmasked) patch is also passed to a small MLP head that classifies the patch by its position in the image grid, and the two losses are combined,
+\begin{equation}
+    \mathcal{L} = \lambda_{\mathrm{rec}} \mathcal{L}_{\mathrm{rec}} + \lambda_{\mathrm{cls}} \mathcal{L}_{\mathrm{cls}} .
+\end{equation}
+The motivation is that reconstruction alone favors coarse, global structure, while a local classification target pushes the encoder to keep fine-grained, position-specific patterns, which should help separate confusable classes at low SNR. In this dissertation DenoMAE2.0 is the signal encoder in its strongest form and is evaluated as an alternative retrieval backbone inside DiSC-AMC (Chapter~\ref{chap:plugandplay}).
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{FIGURES/denomae2/flow_con.png}
+    \caption{DenoMAE2.0 architecture overview. Masked autoencoding is extended with a classification head that treats each visible patch as a distinct class based on its spatial position; the reconstruction loss and the classification loss are combined during pretraining.}
+    \label{fig:denomae2_arch}
+\end{figure}
+
+\subsection{Matched Comparison on the Same Data}
+\label{sec:denomae_samedata}
+
+Table~\ref{tab:denomae_samedata} compares DenoMAE and DenoMAE2.0 with other pretraining methods on the same dataset, the same 10 classes, and the same SNR range, which is the comparison that Table~\ref{compare} cannot provide. The DenoMAE entry equals its constellation-only configuration in Table~\ref{modulations}.
+
+\begin{table}[htbp]
+\centering
+\caption{Fine-tuned test accuracy on the same 10-class dataset and SNR range. Entries other than DenoMAE are as reported in the DenoMAE2.0 paper~\cite{faysal2025denomae20improvingdenoisingmasked}.}
+\label{tab:denomae_samedata}
+\begin{tabular}{lc}
+\toprule
+Method & Accuracy (\%) \\
+\midrule
+ViT (supervised, no pretraining) & 79.9 \\
+MAE & 80.1 \\
+BEiT & 80.4 \\
+MoCov3 & 81.0 \\
+DeiT & 81.2 \\
+DenoMAE & 81.3 \\
+\textbf{DenoMAE2.0} & \textbf{82.4} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+DenoMAE2.0 leads at 82.4\%, 2.5 points above the supervised ViT and about one point above the other self-supervised methods. The bound on this result is that pretraining clearly helps, while the gaps among the self-supervised methods are small and reported without confidence intervals, so they should be read descriptively. The larger effect appears at low SNR, where DenoMAE is 22.1 points above the same model without pretraining at $-10$ dB (Section~\ref{sec:denomae_limits}).
+
+\section{Where the Representation Holds and Where It Breaks}
+\label{sec:denomae_limits}
+
+\textbf{Moderate noise.} The representation holds. DenoMAE reaches 77.5\% at $-10$ dB with pretraining, 22.1 points above the no-pretraining baseline, and the advantage shrinks toward higher SNR (Figure~\ref{accuracy}).
+
+\textbf{Which modality matters.} In the modality ablation (Table~\ref{modulations}), adding the noise modality alone moves accuracy from 83.3\% to 83.5\%, a gain of 0.2 points, whereas adding the clean signal modality moves it from 81.9\% to 83.2\%. The signal modalities contribute most, and the noise modality's measured contribution in this ablation is small.
+
+\textbf{Extreme noise.} At $-30$ dB, constellation diagrams become featureless and accuracy falls to roughly 5--10\%. Every image-based pipeline in this dissertation collapses here, including the retrieval used by DiSC-AMC (Chapter~\ref{chap:plugandplay}), so this is a limit of the image-based representation, not of one method.
+
+\textbf{A new dataset.} Features learned on synthetic constellations transfer weakly to RadioML. On RadioML at $+20$ dB, DenoMAE2.0 reaches 33.8\% against 21.9\% for DenoMAE, and accuracy at $-10$ dB is only 7.1\% against a chance level of 4.2\%. Inside DiSC-AMC the same encoder is also fragile to a modest SNR shift: its accuracy drops from 82.4\% in distribution to 63.25\% at $-11$ to $-15$ dB (Table~\ref{tab:disc_scenario2}), and on RadioML it is outperformed by a generic DINOv2 encoder (Section~\ref{sec:rq1_meets_rq2}).
+
+\textbf{Difficult finding.} The domain-specific representation that wins on matched in-distribution data is the weaker one once the data changes. RQ2 and RQ3 return to this: reasoning amplifies a representation only where its neighbors carry class information, and a learned regularizer does not repair a representation that did not transfer (Section~\ref{sec:familiar_arc}).
 
 \section{Conclusion}
 
-In this chapter, we introduced DenoMAE, a multimodal masked autoencoder that demonstrates the viability of transferring vision-based self-supervised learning techniques to the wireless domain. By representing wireless signals as images (constellation diagrams) and treating noise as an explicit modality, DenoMAE successfully answers \textbf{RQ1} affirmatively: vision transformers trained with masked autoencoding can effectively learn robust wireless signal representations through cross-modal knowledge transfer. Our extensive experiments validate three key findings: (1) the novel noise-as-modality paradigm enables superior denoising and robust feature learning, with 22.1\% accuracy improvements at -10 dB SNR; (2) multimodal learning across five modalities (clean/noisy constellation diagrams, clean/noisy time-domain signals, and noise) provides graceful performance degradation, maintaining 81.30\% accuracy even with single-modality input; (3) the approach achieves state-of-the-art performance (83.5\% accuracy across 10 classes) while requiring only 10\% of typical pretraining data and 33\% of labeled fine-tuning data, demonstrating exceptional efficiency.
+This chapter presented DenoMAE and DenoMAE2.0, co-authored self-supervised representations that treat wireless signals as images and, in DenoMAE, noise as an explicit modality. The answer to RQ1 is yes, within bounds. Pretraining gives label-efficient features: 82.4\% on matched 10-class data for DenoMAE2.0, and a 22.1-point gain from pretraining at $-10$ dB. The bounds are equally part of the result: the gaps among self-supervised methods are small, the noise modality adds little in the ablation, accuracy collapses at $-30$ dB, and the features transfer weakly to RadioML.
 
-\textbf{Connection to the Dissertation Framework:} DenoMAE addresses the fundamental challenge of learning robust representations with minimal labeled data, providing the encoder backbone for the modular wireless foundation model framework proposed in this dissertation. Its dramatic data efficiency (10$\times$ reduction in pretraining data, 3$\times$ reduction in labeled data) validates that strong representations can be learned economically through strategic cross-modal transfer rather than massive isolated training. This work complements the training-free reasoning capabilities of the Plug-and-Play LLM (Chapter~\ref{chap:plugandplay}), which leverages pre-trained language models to perform classification without wireless-specific training; the cross-modal validation provided by CDRF (Chapter~\ref{chap:cdrf}), which demonstrates that vision models generalize to RF drone detection; and the rapid adaptation enabled by Meta-Task (Chapter~\ref{chap:meta_task}), which achieves strong performance with only 5-10 labeled examples per class. Together, these contributions demonstrate that wireless foundation models can be built through modular, cost-effective components—each approximating and integrating world knowledge from different domains—rather than requiring massive-scale end-to-end training. DenoMAE's success establishes the feasibility of the representation learning component, proving that vision-based self-supervised learning can serve as an effective pathway for economical wireless AI systems.
+\textbf{Connection to the Dissertation Framework:} DenoMAE2.0 supplies the encoder that the reasoning module retrieves over and the adaptation module regularizes. Its in-distribution strength and its out-of-distribution weakness together set the ceiling for both: DiSC-AMC's reasoning cannot recover class signal the encoder does not carry, and Meta-Task's regularizer does not repair it. This is why the dissertation's cross-dataset evidence returns to representation generality as the open problem (Section~\ref{sec:familiar_arc}). The real-RF evidence for vision-based learning comes from CageDroneRF (Chapter~\ref{chap:cdrf}).

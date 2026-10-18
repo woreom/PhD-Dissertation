@@ -26,20 +26,24 @@ The motivation behind this approach is inspired by the success of foundation mod
 
 In the field of wireless communications, petabytes of unlabeled signal data are generated daily. However, the unique characteristics of these signals—particularly their noisy and physics-dependent nature—pose distinct challenges. This dissertation aims to address the key challenge of developing WPFMs that can comprehend and represent these complex signals without incurring the prohibitive costs associated with isolated training, while still achieving the generalization capabilities seen in their vision and language counterparts.
 
-To address this, the remainder of this section is structured to first articulate the long-term vision for WPFMs. It then deconstructs this vision into a set of five core research questions that guide the technical work. Finally, it outlines the specific technical approach and contributions developed in this dissertation to answer these questions.
+To address this, the remainder of this section is structured to first articulate the long-term vision for WPFMs. It then deconstructs this vision into a set of three research questions that guide the technical work. Finally, it outlines the specific technical approach and contributions developed in this dissertation to answer these questions.
 
 \subsection{Vision: Wireless Foundation Models}
 
-We envision wireless foundation models analogous to CLIP in vision or GPT in language: pre-trained on diverse, unlabeled signals to learn representations encoding fundamental wireless signal properties, then adapted to specific tasks (classification, denoising, channel estimation) with minimal fine-tuning. Such models would:
+We envision wireless foundation models analogous to CLIP in vision or GPT in language: pre-trained on diverse, unlabeled signals to learn representations encoding fundamental wireless signal properties, then adapted to specific tasks (classification, denoising, channel estimation) with minimal fine-tuning. Ideally, such models would:
 
 \begin{itemize}
     \item \textbf{Generalize Across Modulations:} Recognize modulation schemes never encountered during training through compositional understanding of signal properties, enabled by rich learned representations
-    \item \textbf{Handle SNR Imbalance Robustly:} Employ hybrid generative-discriminative learning (DenoMAE) combined with robust discriminative classifiers (improved plug-and-play), ensuring consistent performance from -10 dB to 30+ dB
+    \item \textbf{Handle SNR Variation Robustly:} Keep performance usable across noise conditions, a property this dissertation tests from $-10$ dB to $+10$ dB and finds to fail at extreme noise ($-30$ dB)
+
     \item \textbf{Operate Cost-Effectively:} Enable training-free or few-shot deployment through LLM integration and self-supervised pre-training, avoiding exhaustive retraining for each scenario
-    \item \textbf{Adapt Rapidly with Minimal Data:} Leverage meta-learning to quickly specialize for new deployment scenarios with few labeled examples, dramatically reducing data requirements
+    \item \textbf{Adapt Rapidly with Minimal Data:} Use meta-learning to specialize for new deployment scenarios from few labeled examples, a property this dissertation supports on few-shot vision benchmarks but not on cross-dataset wireless AMC
+
     \item \textbf{Provide Interpretable Reasoning:} Convert signal features to natural language prompts for LLM-based classification, enabling human-understandable explanations and prompt-based optimization
     \item \textbf{Leverage World Knowledge:} Integrate pre-trained LLMs' reasoning capabilities to approximate and transfer existing knowledge rather than learning everything from scratch
 \end{itemize}
+
+This list is the target, not the result. The chapters that follow test how far each property can be reached with modular, reused components, and the answers are bounded: some properties are supported (open-set reasoning with compact prompts), some only in part (rapid adaptation), and some fail at stated limits (extreme noise, an unseen dataset).
 
 \subsection{Research Questions}
 
@@ -82,47 +86,46 @@ This work focuses on automatic modulation classification (AMC) as the primary te
 Our core application domain is automatic modulation classification under challenging conditions:
 \begin{itemize}
     \item \textbf{Signal Representations:} We explore time-domain IQ samples, constellation diagrams, and noise patterns as complementary modalities
-    \item \textbf{Operating Conditions:} SNR ranges from -10 dB to 30 dB, covering severe noise to clean signal regimes\cite{}
-    \item \textbf{Modulation Schemes:} Focus on common digital modulations (BPSK, QPSK, 8PSK, QAM variants, FSK, GFSK)\cite{} with extensions to emerging schemes
-    \item \textbf{Channel Models:} Primarily AWGN and fading channels\cite{} representative of practical wireless systems
-    \item \textbf{Datasets:} %RadioML2016.10a/b\cite{}, RadioML2018.01a\cite{}, and 
-    synthetic datasets for controlled experiments
+    \item \textbf{Operating Conditions:} SNR ranges mainly from $-10$ dB to $+10$ dB in training and evaluation, with out-of-distribution queries at $-15$ to $-11$ dB, RadioML at $-20$ to $+20$ dB, and an extreme-noise probe at $-30$ dB
+    \item \textbf{Modulation Schemes:} A 10-class synthetic set (4ASK, 4PAM, 8ASK, 16PAM, CPFSK, DQPSK, GFSK, GMSK, OOK, OQPSK) and the 24-class RadioML 2018.01a benchmark
+    \item \textbf{Channel Models:} AWGN for the synthetic data; RadioML adds fading and hardware impairments; CageDroneRF adds real over-the-air channels
+    \item \textbf{Datasets:} a synthetic 10-class benchmark for controlled experiments, RadioML 2018.01a for cross-dataset tests, and the CageDroneRF real-RF benchmark
 \end{itemize}
 
 \subsection{Scope Limitations}
 
 While this work establishes foundations for wireless AI, certain aspects remain future work:
 \begin{itemize}
-    \item \textbf{End-to-End Communication:} Focus is on physical layer modulation classification, not complete communication system design\cite{}
-    \item \textbf{Hardware Implementation:} Validation uses simulated and standard datasets rather than custom hardware deployments\cite{}
-    \item \textbf{Adversarial Robustness:} While noise robustness is central, adversarial attacks\cite{} and countermeasures are not extensively explored
-    \item \textbf{Multi-User/MIMO Scenarios:} Primarily single-user, single-antenna scenarios; multi-antenna\cite{} and interference management are secondary
-    \item \textbf{Foundation Model Scale:} Due to computational constraints, models are smaller than vision/language foundation models\cite{}; principles established here enable future scaling
+    \item \textbf{End-to-End Communication:} Focus is on physical layer modulation classification, not complete communication system design
+    \item \textbf{Hardware Implementation:} Validation uses simulated data, a standard benchmark, and recorded over-the-air captures (CageDroneRF); no end-to-end hardware-in-the-loop deployment is evaluated
+    \item \textbf{Adversarial Robustness:} While noise robustness is central, adversarial attacks and countermeasures are not extensively explored
+    \item \textbf{Multi-User/MIMO Scenarios:} Primarily single-user, single-antenna scenarios; multi-antenna and interference management are secondary
+    \item \textbf{Foundation Model Scale:} Due to computational constraints, models are smaller than vision/language foundation models; principles established here enable future scaling
 \end{itemize}
 
 \section{Contributions} \label{sec:contributions}
 
-This dissertation makes four primary technical contributions that collectively establish a modular, cost-effective pathway toward Wireless Physical-Layer Foundation Models (WPFMs). The first three contributions form the core components of the proposed framework, while the fourth provides a crucial benchmark and methodology for cross-modal knowledge transfer.
+This dissertation makes four primary contributions: self-supervised, vision-based representation (DenoMAE, DenoMAE2.0, and the CageDroneRF benchmark), LLM-based reasoning (Plug-and-Play and DiSC-AMC), and meta-learning adaptation (Meta-Task). Authorship is stated plainly in Section~\ref{sec:authorship}: Plug-and-Play, DiSC-AMC, and Meta-Task are first-author work, CageDroneRF is shared first-author work, and DenoMAE and DenoMAE2.0 are co-authored works led by A.~Faysal that this dissertation uses as the representation.
 
 \subsection{Toward Wireless Foundation Models: A Modular, Cost-Effective Framework}
 \label{subsec:unified_framework}
 
-\textbf{Central Thesis Contribution:} We propose a modular and cost-effective framework for Wireless Physical-Layer Foundation Models (WPFMs) that strategically approximates and integrates world knowledge, aiming to demonstrate that:
+\textbf{Central Thesis Contribution:} The dissertation asks how far wireless foundation-model capabilities can be reached without training a large RF model from scratch, and proposes a modular framework that borrows world knowledge from vision self-supervision, pretrained language models, and learning-to-learn. It answers with three bounded results:
 
 \begin{itemize}
-    \item \textbf{Self-Supervised Learning Component:} Multimodal masked autoencoders (DenoMAE) will learn universal wireless signal representations through unsupervised learning on unlabeled data, dramatically reducing labeled data requirements (80\% reduction) while approximating world knowledge of signal patterns
-    \item \textbf{LLM Integration Component:} Large language models can perform open-set wireless classification by reasoning over compact, retrieval-augmented symbolic prompts rather than raw signal data. Plug-and-Play first established training-free feasibility; DiSC-AMC~\cite{disc_amc} then resolved its token-efficiency bottleneck, letting a fine-tuned 7B model match or surpass dedicated supervised encoders (83.0\% in-distribution, 82.5\% out-of-distribution) and a training-free 7B model outperform a 200B-parameter baseline at a fraction of the prompt length (71.9\% at 0.5K tokens vs.\ 69.92\% at 2.9K)
-    \item \textbf{Hybrid Architecture Component:} DenoMAE 's hybrid generative-discriminative learning combined with an improved plug-and-play discriminative classifier will ensure robust performance across SNR conditions (-10 dB to 30+ dB), addressing the critical SNR imbalance problem through rich representation learning and condition-aware classification
-    \item \textbf{Meta-Learning Component:} Meta-Task learning will enable rapid adaptation to novel modulation types with minimal labeled data (5-10 examples), efficiently applying integrated knowledge to new tasks and channel conditions
-    \item \textbf{Cost-Effectiveness Principle:} The key to economical wireless foundation models lies in this strategic, modular framework design that leverages existing world knowledge rather than massive isolated training
+    \item \textbf{RQ1, Represent (yes, within bounds):} Image-based self-supervision gives label-efficient RF features: 82.4\% on matched 10-class data, a 22.1-point gain from pretraining at $-10$ dB, and 0.986 mAP@0.5 for drone detection on real RF captures. It collapses at extreme noise ($-30$ dB) and transfers weakly to an unseen dataset.
+    \item \textbf{RQ2, Reason (yes, with compact symbols and retrieved examples):} Plug-and-Play first established training-free feasibility; DiSC-AMC~\cite{disc_amc} then resolved its token-efficiency bottleneck, letting a fine-tuned 7B model reach 83.0\% in distribution and 82.5\% out of distribution, and a training-free 7B model reach 71.9\% at 0.5K tokens against 69.92\% for a 200B model at 2.9K tokens. Its accuracy is only as good as the embedding it retrieves over.
+    \item \textbf{RQ3, Adapt (partly):} Meta-Task's learnable regularizer improves few-shot vision benchmarks (for example 65.4\% to 71.3\% for Prototypical Networks on Tiered-ImageNet) but gives no net gain over plain fine-tuning on cross-dataset wireless AMC (22.2\% vs.\ 23.0\%).
+    \item \textbf{Composition:} DiSC-AMC composes an RQ1 encoder with an RQ2 reasoner, lifting RadioML accuracy up to eight times over the encoder alone, and the RadioML adaptation test runs all three modules together. The RQ3 result points back to RQ1: on a new dataset, representation quality limits accuracy more than regularization does.
+    \item \textbf{Cost-effectiveness principle:} The framework concentrates new investment where a task needs it and reuses an available base elsewhere. This is supported by token- and parameter-efficiency results, not by a complete latency, energy, or monetary comparison (Section~\ref{sec:cost_effectiveness_scope}).
 \end{itemize}
 
-This modular approach will provide both a conceptual blueprint and practical pathway toward next-generation wireless AI systems that are scalable, interpretable, and economically deployable. The framework's modularity will enable: (1) independent component optimization and updates; (2) targeted improvements without full system retraining; (3) flexible integration of future advances in self-supervised learning, LLMs, or meta-learning; (4) cost-effective deployment through training-free operation and minimal data requirements.
+Because the modules have explicit interfaces, the framework also supports diagnosis: a failure can be traced to the representation, the reasoning, or the adaptation stage. That is how the dissertation's central finding emerges, namely that the generality of the underlying representation bounds what reasoning and adaptation can add (Section~\ref{sec:familiar_arc}).
 
 \section{Structure}
 \label{sec:structure}
 
-This dissertation is organized to guide readers from foundational concepts through technical contributions toward the unifying vision of wireless foundation models. The thesis follows a standard academic structure with nine chapters, each building progressively on previous content.
+This dissertation is organized to guide readers from foundational concepts through technical contributions toward the unifying vision of wireless foundation models. The thesis follows a standard academic structure with six chapters, each building progressively on previous content.
 
 \begin{itemize}
     % \item \textbf{Chapter~\ref{chap:intro}: Introduction:} Establishes the vision of wireless foundation models as the organizing principle for this work. Articulates challenges in wireless communication that motivate foundation model approaches. Outlines five interconnected research questions (RQ1-RQ5), presents three main technical contributions (DenoMAE, Plug-and-Play, Meta-Task), and provides roadmap emphasizing the novel integration of self-supervised learning, LLM-based reasoning, and meta-learning for wireless signals.
@@ -131,11 +134,13 @@ This dissertation is organized to guide readers from foundational concepts throu
 
     % \item \textbf{Chapter~\ref{chap:methodology}: Methodology:} Describes the overall research methodology and framework connecting the three contributions. Presents the modular framework design showing how DenoMAE, Plug-and-Play, and Meta-Task components work independently and can integrate synergistically. Provides detailed descriptions of the three datasets used across all experiments, emphasizing experimental design, data preprocessing pipelines, evaluation metrics, and validation strategies. Establishes the methodological foundation for the empirical work in subsequent chapters.
 
-    \item 	\textbf{Chapter~\ref{chap:denomae} and~\ref{chap:cdrf}: Self-Supervised Representation Learning (DenoMAE \& CDRF):} Presents Contribution 1, addressing RQ1, RQ4, and RQ5. Introduces DenoMAE, a multimodal masked autoencoder that treats noise as an informative modality. Details the architecture processing time-domain IQ samples and constellation diagrams through vision transformers. This chapter also introduces the CDRF benchmark, demonstrating the successful application of computer vision models to RF drone detection by representing signals as images. This combined work establishes that vision transformers can approximate world knowledge for wireless signals, enabling significant data reduction and cross-modal understanding.
+    \item 	\textbf{Chapters~\ref{chap:denomae} and~\ref{chap:cdrf}: Self-Supervised Representation Learning (DenoMAE, DenoMAE2.0 \& CDRF):} Addresses RQ1. Presents DenoMAE and DenoMAE2.0, co-authored self-supervised representations (led by A.~Faysal) that treat signals as images and, in DenoMAE, noise as a modality, with a matched comparison on the same data and an account of where the representation breaks: extreme noise and a new dataset. Presents CageDroneRF, a real over-the-air RF benchmark and toolkit (shared first-author work) on which vision models are tested for detection, hierarchical classification, and open-set recognition.
+
 
     \item \textbf{Chapter~\ref{chap:plugandplay}: LLM-Based Reasoning for Open-Set AMC (Plug-and-Play and DiSC-AMC):} Presents Contribution 2, addressing RQ2. Introduces Plug-and-Play, which first demonstrates training-free wireless classification through LLM reasoning over statistical feature-to-language prompts, and diagnoses its token-efficiency bottleneck. Then introduces DiSC-AMC~\cite{disc_amc}, which resolves that bottleneck through feature discretization, self-supervised context retrieval, and candidate-space pruning, achieving competitive or superior accuracy relative to dedicated supervised encoders at a fraction of the token and parameter budget, both fine-tuned and training-free.
 
-    \item 	\textbf{Chapter~\ref{chap:meta_task}: Meta-Learning for Rapid Adaptation (Meta-Task):} Presents Contribution 3, addressing RQ3. Introduces Meta-Task, which reformulates regularization as a learnable task within few-shot learning. Details the Task-Decoder architecture and demonstrates significant performance gains and faster convergence, establishing that meta-learning enables rapid adaptation to new wireless tasks with minimal labeled data.
+    \item 	\textbf{Chapter~\ref{chap:meta_task}: Meta-Learning for Adaptation (Meta-Task):} Presents Contribution 3, addressing RQ3. Introduces Meta-Task, which reformulates regularization as a learnable task in few-shot learning through a Task-Decoder, shows gains on few-shot vision benchmarks, and then tests it directly on wireless AMC through the DiSC-AMC pipeline, where it gives no net gain over plain fine-tuning, a bounded answer that points back to representation quality.
+
     
     % \item 	\textbf{Chapter~\ref{chap:results}: Experimental Results and Analysis:} Consolidates and compares results across all three contributions. Presents comprehensive experimental validation including ablation studies, cross-dataset evaluation, and comparative analysis. Analyzes how each method performs across different SNR conditions, dataset sizes, and task complexities. Discusses performance trade-offs and computational efficiency. Evaluates the potential for component integration and synergies within the modular framework.
     

@@ -39,7 +39,7 @@ The main contributions of this paper are as follows. (1) Meta-Task Framework: We
 
 \textbf{Framework Position:} Within the dissertation's modular framework, Meta-Task provides the rapid adaptation mechanism essential for wireless foundation models. While DenoMAE (Chapter~\ref{chap:denomae}) learns robust representations and the Plug-and-Play LLM (Chapter~\ref{chap:plugandplay}) enables training-free reasoning, Meta-Task addresses the critical challenge of adapting to new wireless scenarios with only 5-10 labeled examples. This few-shot capability is vital for cost-effective deployment across diverse channel conditions, modulation types, and operational environments—scenarios where acquiring extensive labeled data is prohibitively expensive. Meta-Task's method-agnostic design ensures compatibility with various architectures, making it a practical adaptation layer for wireless foundation models.
 
-The remainder of the paper is organized as follows: Section \ref{sec:back_ground} reviews related work to contextualize the problem. Section \ref{sec:approach} details our proposed approach, and Section \ref{sec:results} presents experimental results. Finally, conclusions are drawn in Section \ref{sec:conclusion}.
+The remainder of the paper is organized as follows: Section \ref{sec:back_ground} reviews related work to contextualize the problem. Section \ref{sec:approach} details our proposed approach, and Section \ref{sec:results} presents experimental results. Finally, conclusions are drawn in Section \ref{sec:meta_tasks_conclusion}.
 
 
 % \begin{table}[!ht]
@@ -77,7 +77,7 @@ The remainder of the paper is organized as follows: Section \ref{sec:back_ground
 
 \section{Related Work}\label{sec:back_ground}
 
-For a comprehensive review of meta-learning, few-shot learning, and regularization techniques, please refer to Chapter~\ref{chap:background}, Section~\ref{sec:meta_learning_background}. Here we position Meta-Task within this landscape.
+Here we position Meta-Task within this landscape.
 
 Existing regularization approaches include Explicit Regularization (ER), Episode Augmentation Regularization (EAR), Task Augmentation Regularization (TAR), and Adversarial Task Upsampling (ATU)~\cite{imaml,mrmaml,yamaguchi2023regularizing,yao2021meta,wu2022adversarial}. While effective, these methods often require extensive pre-training, synthetic data generation, or task-specific modifications.
 
