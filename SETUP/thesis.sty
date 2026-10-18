@@ -171,6 +171,12 @@
 \newcommand{\@secondreader}{Moe}
 \newcommand{\secondreader}[1]{\renewcommand{\@secondreader}{#1}}
 
+\newcommand{\@thirdreader}{}
+\newcommand{\thirdreader}[1]{\renewcommand{\@thirdreader}{#1}}
+
+\newcommand{\@fourthreader}{}
+\newcommand{\fourthreader}[1]{\renewcommand{\@fourthreader}{#1}}
+
 \newcommand{\advis@r}{Advisor}
 
 \newcommand{\@submitdate}{\ifcase\the\month\or
@@ -234,17 +240,35 @@ of Doctor of Philosophy.
 \end{minipage}
 \end{center}}
 
+\long\def\signaturec#1{%
+\begin{center}
+\shortstack{\vrule width 3.2in height 0.4pt\\#1}
+\end{center}}
+
 \def\signaturepage{%
-	\signature{\@principaladvisor\\(Principal \advis@r)}
+	\begin{center}
+	\begin{minipage}{6in}
+	\parindent=0pt
+	I certify that I have read this dissertation and that in my opinion
+	it is fully adequate, in scope and in quality, as a dissertation for
+	the degree of Doctor of Philosophy.
+	\end{minipage}
+	\end{center}
 	\vfill
-	\signature{\@firstreader\\(Associate \advis@r)}
+	\signaturec{\@principaladvisor\\(Principal \advis@r)}
 	\vfill
-	\signature\@secondreader
+	\signaturec\@firstreader
+	\vfill
+	\signaturec\@secondreader
+	\vfill
+	\signaturec\@thirdreader
+	\vfill
+	\signaturec\@fourthreader
 	\vfill
 	\begin{center}
 	\begin{minipage}{6in}
 	Approved for the University Committee on Graduate Studies:\par
-	\vspace{.5in}
+	\vspace{.35in}
 	\hbox to 4in{\hfil\vrule width 3in height 0.4pt}
 	\end{minipage}
 	\end{center}}
