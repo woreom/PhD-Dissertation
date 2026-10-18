@@ -455,6 +455,61 @@ Table~\ref{tab:metatask_wireless} reports the result under the corrected protoco
 
 We report this as a \textbf{robust null result}: both plausible objections to the initial positive finding---an unfair frozen-encoder comparison and an improperly weighted auxiliary loss---were checked explicitly, and neither reversal flips the conclusion. This matters for two reasons. First, it demonstrates the value of adversarial self-checking of promising early results before they are reported as a contribution; the original +4.6-point frozen-encoder result would have overstated Meta-Task's wireless applicability had it not been re-examined under a fair protocol. Second, it sharpens the dissertation's account of \emph{why} Meta-Task helps where it helps: Section~\ref{sec:results} showed its largest gains on metric learners with a weak inductive bias (Prototypical Networks) applied to within-domain few-shot vision tasks; here, the task is instead cross-dataset transfer (SynthMod-10-trained representations evaluated on RadioML), where Section~\ref{sec:disc_discussion} already identified the self-supervised \emph{representation} itself, not the classifier's regularization, as the bottleneck. A learnable auxiliary task cannot compensate for an encoder whose embeddings do not retrieve informative neighbors on the target dataset. This connects directly back to RQ1 (Chapters~\ref{chap:denomae}--\ref{chap:cdrf}): on wireless cross-dataset transfer, representation quality dominates regularization.
 
+\section{A Second Wireless Test: Few-Shot Channel Estimation}
+\label{sec:channel_estimation}
+
+The RadioML experiment above tests Meta-Task on one wireless task. An independent study, Roshan et al.~\cite{roshan2026channelestimation} (second-author work of this dissertation, with R.~Gh.~Roshan first), asks the broader question that RQ3 poses for a different wireless task: can a model that has learned to adapt specialize to an unseen channel from only a few labeled examples? It does not use Meta-Task. It uses standard MAML and MultiGrade-MAML (MG-MAML), so it is evidence about learning-to-learn on wireless data, not about the Task-Decoder, and it is used here only as corroboration.
+
+\subsection{Setup}
+
+The task is pilot-aided channel estimation in a single-antenna OFDM system: reconstruct the full time-frequency channel response from a noisy least-squares (LS) estimate interpolated from sparse pilots, scored by mean squared error (MSE, lower is better). Source and target channels are simulated: five Tapped Delay Line profiles (TDL-A to TDL-E, at 0, 5, and 10 dB SNR, giving 15 channel conditions) and nine urban-microcell (UMi) conditions from the CeBed framework. Splits are made at the channel level, so each evaluated channel is unseen in training (10 of 15 TDL conditions and 4 of 9 UMi conditions are used for training). For each unseen channel, 5 labeled frames are used for fine-tuning and the remaining 226 frames for evaluation. Four estimators are compared under the same budget: LS; linear MMSE (LMMSE), which uses second-order channel and noise statistics; ChannelNet, a convolutional estimator trained without meta-learning; and the two meta-learners, MAML and MG-MAML.
+
+\subsection{Results}
+
+Table~\ref{tab:channel_est} combines the paper's NLOS, LOS, and domain-shift results. The UMi column is a domain shift, since the learned models were trained mostly on TDL channels.
+
+\begin{table}[htbp]
+\centering
+\caption{Few-shot (5-shot) channel estimation MSE; lower is better. TDL-A and TDL-C are rich-multipath NLOS channels, TDL-D and TDL-E are LOS-dominant, and UMi is a domain shift. Values are as reported by Roshan et al.~\cite{roshan2026channelestimation}.}
+\label{tab:channel_est}
+\small
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{lcccccc}
+\toprule
+Method & TDL-A (0 dB) & TDL-A (5 dB) & TDL-C (5 dB) & TDL-D (5 dB) & TDL-E (10 dB) & UMi (5 dB) \\
+\midrule
+LS (input) & 1.7326 & 0.5483 & 0.5490 & 0.5508 & 0.1759 & 0.1844 \\
+LMMSE & \textbf{0.0202} & \textbf{0.0065} & \textbf{0.0075} & \textbf{0.0073} & \textbf{0.0024} & \textbf{0.0022} \\
+ChannelNet & 0.1571 & 0.0742 & 0.0744 & 0.0432 & 0.0229 & 0.0258 \\
+MAML & 1.4831 & 1.5827 & 1.1330 & 0.1926 & 0.2282 & 0.0563 \\
+MG-MAML & 0.4366 & 0.4736 & 0.4170 & 0.0793 & 0.0482 & 0.1164 \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+Four observations follow from the table. First, the classical LMMSE estimator has the lowest error in every condition, because it uses explicit second-order statistics that act as a structural prior. Second, the learned estimators are sensitive to noise and channel complexity: in the NLOS conditions MAML's error is as large as, or larger than, that of the LS input it starts from (for example 1.5827 against 0.5483 on TDL-A at 5 dB), consistent with inner-loop gradients being estimated from five noisy frames. Third, the non-meta ChannelNet is better than both meta-learners in every condition shown, and MG-MAML, which stages the meta-updates for stability, is steadier than MAML on NLOS channels but is not robust to the UMi shift (0.1164, worse than ChannelNet's 0.0258). Fourth, increasing the number of adaptation frames helps the meta-learners but does not close the gap (Table~\ref{tab:channel_est_k}): MAML and MG-MAML improve from 1 to 10 shots, with a non-monotonic step for MAML at 15, while ChannelNet is nearly flat, and none approaches LMMSE's 0.0022.
+
+\begin{table}[htbp]
+\centering
+\caption{Effect of the number of adaptation frames $K$ on UMi channel estimation (MSE; lower is better), from Roshan et al.~\cite{roshan2026channelestimation}.}
+\label{tab:channel_est_k}
+\begin{tabular}{lcccc}
+\toprule
+Model & 1-shot & 5-shot & 10-shot & 15-shot \\
+\midrule
+ChannelNet & 0.0291 & 0.0258 & 0.0263 & 0.0251 \\
+MAML & 0.0902 & 0.0563 & 0.0508 & 0.0581 \\
+MG-MAML & 0.1487 & 0.1164 & 0.0921 & 0.0870 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{What It Adds to RQ3}
+
+This study supports the RQ3 answer in three ways. It shows that the RadioML null result is not specific to Meta-Task, to classification, or to the DiSC-AMC pipeline: on a second wireless task, learning-to-learn did not reliably beat a plain learned estimator, and under noise and domain shift it was often worse. It suggests a mechanism that fits the RadioML finding, namely that adaptation from a handful of noisy examples amplifies variance, so what limits adaptation is the quality and generality of the starting representation or prior, not the adaptation procedure. And it supplies a counterpart to the dissertation's arc from hand-crafted features to learned representations (Section~\ref{sec:familiar_arc}): the estimator built on explicit channel statistics is the most robust under data paucity and shift, while learned priors are distribution-dependent.
+
+The bounds are as important as the support. MAML and MG-MAML are not Meta-Task, and the task is regression on simulated channels rather than modulation classification, so the study does not test the Task-Decoder or the RadioML claim directly. The results are single reported values per condition without confidence intervals, and LMMSE benefits from channel statistics that the learned models must acquire from data. Whether Meta-Task's reconstruction objective, which is close in spirit to channel estimation viewed as image reconstruction, helps here is untested and is left to future work.
+
 \section{Conclusion}\label{sec:meta_tasks_conclusion}
 
 
