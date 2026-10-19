@@ -294,7 +294,7 @@ These datasets offer diverse and challenging scenarios for few-shot learning, en
 To demonstrate the method-agnostic nature of our approach, we integrated the {Meta-Task} framework with four few-shot learning models:
 
 \noindent
-\textbf{Prototypical Network (PN)} \cite{proto}: Utilizes a ResNet-50 \cite{resnet} backbone for feature extraction. It computes class prototypes in the embedding space, classifying query samples based on their distances to these prototypes.
+\textbf{Prototypical Network (PN)} \cite{proto}: Utilizes a ResNet-18 \cite{resnet} backbone for feature extraction. It computes class prototypes in the embedding space, classifying query samples based on their distances to these prototypes.
 
 \noindent
 \textbf{MAML}~\cite{maml}: Employs a four-layer ConvNet architecture aiming to find initial model parameters that can be quickly adapted to new tasks with minimal gradient updates.
@@ -387,7 +387,7 @@ Our experimental results demonstrate that the Meta-Task framework consistently o
 
 These results highlight the framework's efficiency in leveraging a small number of additional parameters to enhance generalization while reducing computational overhead. By introducing Meta-Tasks, the learning process is effectively regulated, eliminating the need for extensive parameter tuning or large-scale episodic training. This makes the Meta-Task framework both lightweight and practical for real-world applications. Further details on are provided in Table~\ref{table:1} and Table~\ref{table:2}.
 
-From a wireless foundation model perspective, these results validate the feasibility of rapid adaptation with minimal labeled data. The 4.3 percentage point improvement with only 5-10 examples demonstrates that foundation models need not require extensive labeled datasets for each deployment scenario. The 20k vs. 50k episode convergence reduction translates directly to training cost savings—critical for economical wireless AI deployment across diverse channel conditions and modulation types.
+From a wireless foundation model perspective, these results validate the feasibility of rapid adaptation with minimal labeled data. The 5.9 percentage point improvement on TieredImageNet 5-way 5-shot (Table~\ref{table:1}) demonstrates that foundation models need not require extensive labeled datasets for each deployment scenario. The 20k vs. 50k episode convergence reduction translates directly to training cost savings—critical for economical wireless AI deployment across diverse channel conditions and modulation types.
 }
 
 \subsubsection*{Prototypical Network Results}
@@ -395,7 +395,7 @@ Table~\ref{table:1} presents our experimental results on MiniImageNet and Tiered
 
 In the 5-way 1-shot scenario, the Task-Decoder improved accuracy from 46.6\% to 50\% on TieredImageNet, highlighting its efficacy in scenarios with extremely limited data. These consistent improvements across different datasets and settings demonstrate the robustness and effectiveness of our approach.
 \subsubsection*{MAML Results}
-Table~\ref{table:1} also showcases the performance of the {Task-Decoder} integrated with MAML. Our method outperforms the baseline MAML by an average of 0.48\% in the 5-way 1-shot setting and 0.78\% in the 5-way 5-shot setting on MiniImageNet. Although the absolute improvements are modest, they demonstrate the effectiveness of the {Task-Decoder} in enhancing the adaptability of MAML.
+Table~\ref{table:1} also showcases the performance of the {Task-Decoder} integrated with MAML. Our method outperforms the baseline MAML by up to 0.27\% in the 5-way 1-shot setting and up to 0.78\% in the 5-way 5-shot setting on MiniImageNet. Although the absolute improvements are modest, they demonstrate the effectiveness of the {Task-Decoder} in enhancing the adaptability of MAML.
 
 To examine the impact of the {Task-Decoder's} architecture ($\phi$) on generalization, we trained MAML using two different{Task-Decoders}: a shallow decoder with 75K parameters and a deeper decoder with 250K parameters. Interestingly, the shallow decoder excelled in the 5-way 1-shot task, suggesting that deeper models are not always superior when data is scarce. In contrast, the deeper decoder performed better with more shots, highlighting the importance of model depth in specific contexts. This indicates that the Task-Decoder and its Meta-Task extensions can be effective even with a shallow network, which is beneficial in resource-constrained environments.
 
@@ -425,6 +425,7 @@ The vision benchmarks above establish that Meta-Task's learnable regularization 
 We evaluate on RadioML 2018.01a (24 classes, five SNR levels from $-20$ to $+20$ dB), using the full DiSC-AMC pipeline (DeepSeek-R1-Distill-Qwen-7B reasoning over discretized, retrieval-augmented exemplars; Section~\ref{sec:disc_amc}) as the fixed downstream endpoint, so that any effect of the auxiliary task is measured on the metric that matters for the dissertation's RQ2 contribution, not on an encoder's classification head in isolation. We compare three configurations that isolate the Task-Decoder's effect while holding the encoder backbone (DenoMAE2.0) and the reasoning pipeline fixed:
 \begin{description}
     \item[(A) DenoMAE2.0 baseline] the encoder frozen, only a classification head trained, as published in Chapter~\ref{chap:plugandplay}'s DiSC-AMC Scenario III results.
+% TODO(author-audit): (A) is labelled frozen but cites Scenario III (fine-tuned, Table 4.5); 21.5 = mean of Table 4.5 DenoMAE2.0 DiSC-AMC column; Table 4.6 (unadapted) mean = 9.17. Reconcile label/reference.
     \item[(B) DenoMAE2.0, fine-tuned] the encoder updated end-to-end on RadioML, with no auxiliary task.
     \item[(C) DenoMAE2.0 + Meta-Task] identical to (B), with the Task-Decoder's reconstruction loss added on a separate optimizer.
 \end{description}
@@ -442,6 +443,7 @@ Two protocol fixes were necessary for this comparison to be fair, both motivated
 \toprule
 Configuration & Mean Accuracy (\%) \\
 \midrule
+% TODO(author-audit): (A) is labelled frozen but cites Scenario III (fine-tuned, Table 4.5); 21.5 = mean of Table 4.5 DenoMAE2.0 DiSC-AMC column; Table 4.6 (unadapted) mean = 9.17. Reconcile label/reference.
 (A) DenoMAE2.0, frozen encoder & 21.5 \\
 (B) DenoMAE2.0, fine-tuned, no auxiliary task & 23.0 \\
 (C) DenoMAE2.0, fine-tuned + Meta-Task & 22.2 \\
